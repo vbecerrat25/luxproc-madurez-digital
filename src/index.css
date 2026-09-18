@@ -1,0 +1,167 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@variant dark (.dark &);
+
+/* Hide the print-only container on-screen robustly */
+#print-section {
+  display: none !important;
+}
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom background animation for technological subtle particles */
+@keyframes float {
+  0% { transform: translateY(0px) translateX(0px); }
+  50% { transform: translateY(-12px) translateX(8px); }
+  100% { transform: translateY(0px) translateX(0px); }
+}
+
+@keyframes float-reverse {
+  0% { transform: translateY(0px) translateX(0px); }
+  50% { transform: translateY(12px) translateX(-8px); }
+  100% { transform: translateY(0px) translateX(0px); }
+}
+
+.animate-float-slow {
+  animation: float 8s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 10s ease-in-out infinite;
+}
+
+/* Print Overrides for Professional PDF Layouts */
+@media print {
+  /* Force clean white background and hide standard backgrounds, grids, gradients */
+  html, body, #root, #root > div, main {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+    box-shadow: none !important;
+    font-family: 'Inter', sans-serif !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Completely hide ambient backgrounds, headers, footers, and interactive results components */
+  .print\:hidden,
+  .print-hidden,
+  header,
+  footer,
+  .pointer-events-none,
+  #theme-toggle-btn,
+  #role-user-btn,
+  #role-admin-btn,
+  #results-root > div:not(#print-section) {
+    display: none !important;
+  }
+
+  /* Ensure the print section is displayed as block and is styled beautifully */
+  #print-section {
+    display: block !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 24px !important;
+    box-shadow: none !important;
+  }
+
+  /* Ensure page breaks behave properly for the PDF pages */
+  .page-break {
+    page-break-after: always !important;
+    break-after: always !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+}
+
+/* Global styles for high-fidelity PDF page generation (applicable in both screen-cloning and printing) */
+.pdf-page-container {
+  page-break-after: always !important;
+  break-after: page !important;
+  box-sizing: border-box;
+  position: relative;
+  width: 100%;
+}
+
+.pdf-page-container:last-child {
+  page-break-after: avoid !important;
+  break-after: avoid !important;
+}
+
+.avoid-page-break {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+@media screen {
+  /* On-screen preview styling: simulates separate sheets of paper */
+  .pdf-page-container {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 20px !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+    margin-top: 12px !important;
+    margin-bottom: 24px !important;
+    padding: 36px 40px !important;
+    min-height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    transition: all 0.3s ease;
+  }
+
+  /* Responsive styling on mobile devices to prevent excessive padding and overflow */
+  @media (max-width: 640px) {
+    .pdf-page-container {
+      padding: 20px 14px !important;
+      border-radius: 16px !important;
+      margin-bottom: 16px !important;
+      box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.05) !important;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .pdf-page-container {
+      min-height: 960px !important;
+      justify-content: flex-start !important;
+    }
+  }
+
+  /* Hover effect to give an immersive interactive feel to each sheet preview */
+  .pdf-page-container:hover {
+    box-shadow: 0 20px 35px -5px rgba(0, 0, 0, 0.08), 0 10px 15px -6px rgba(0, 0, 0, 0.06) !important;
+    transform: translateY(-2px);
+  }
+}
+
+@media print {
+  /* Print layout: strips away screen cards decoration to run seamless edge-to-edge pages */
+  .pdf-page-container {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: none !important;
+    border-radius: 0px !important;
+    box-shadow: none !important;
+    margin: 0px !important;
+    padding: 30px !important;
+    min-height: auto !important;
+    height: auto !important;
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+}
+

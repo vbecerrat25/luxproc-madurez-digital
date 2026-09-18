@@ -1,0 +1,6 @@
+{
+  "name": "Diagnóstico de Madurez Digital",
+  "description": "Plataforma de evaluación inteligente de madurez tecnológica y transformación digital para empresas y emprendedores dentro del ecosistema LUXPROC.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
