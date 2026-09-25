@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Mail, Lock, ShieldCheck, Check, ArrowRight, Loader2, AlertCircle, User, Eye, EyeOff } from 'lucide-react';
-import { signInWithGoogle, signInWithEmail, signUpWithEmail } from '../lib/firebase';
+import React, { useState, useEffect } from 'react';
+import { Mail, Lock, ShieldCheck, Check, ArrowRight, Loader2, AlertCircle, User, Eye, EyeOff, X } from 'lucide-react';
+import { signInWithGoogle, cancelGoogleSignIn, signInWithEmail, signUpWithEmail } from '../lib/firebase';
 import { useLanguage } from '../i18n/LanguageContext';
 import LanguageSelector from './LanguageSelector';
 
@@ -17,6 +17,69 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isWaitingLong, setIsWaitingLong] = useState(false);
+
+  // Monitor waiting state when loading to inform user if taking longer than expected
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    if (isLoading) {
+      timer = setTimeout(() => {
+        setIsWaitingLong(true);
+      }, 7000);
+    } else {
+      setIsWaitingLong(false);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [isLoading]);
+
+  const handleCancel = () => {
+    cancelGoogleSignIn();
+    setIsLoading(false);
+    setIsWaitingLong(false);
+    setError(null);
+  };
+
+  const handleGoogleLogin = async () => {
+    if (isLoading) return;
+    setError(null);
+    setIsLoading(true);
+    setIsWaitingLong(false);
+
+    try {
+      // 20 second safety timeout for rapid reaction
+      const profile = await signInWithGoogle(20000);
+
+      // If user closed popup, cancelled, or timed out
+      if (profile.cancelled) {
+        setIsLoading(false);
+        setIsWaitingLong(false);
+        if (profile.timedOut) {
+          setError('La conexión con Google tardó demasiado. Puedes reintentar o usar el acceso directo.');
+        }
+        return;
+      }
+      
+      // Check if they are signing in as master admin
+      const isMaster = profile.email === 'luxproc.11@gmail.com';
+      const finalName = isMaster ? 'Administrador Maestro' : profile.name;
+      const finalAvatar = isMaster 
+        ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100'
+        : profile.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(finalName)}`;
+      
+      onLoginSuccess(profile.email, finalName, finalAvatar);
+    } catch (err: any) {
+      if (err?.message === 'POPUP_BLOCKED') {
+        setError(t('login.errPopupBlocked', 'La ventana emergente fue bloqueada por el navegador. Por favor permite las ventanas emergentes o usa tu correo.'));
+      } else {
+        setError(t('login.errGeneral', 'No se pudo completar el inicio de sesión. Por favor intenta nuevamente.'));
+      }
+    } finally {
+      setIsLoading(false);
+      setIsWaitingLong(false);
+    }
+  };
 
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,8 +135,6 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         if (err.code === 'auth/invalid-email') {
           setError(t('login.errInvalidEmail'));
         } else {
-          // If password is not valid, credentials are incorrect or sign-in failed:
-          // only display clean retry message to user
           console.warn('Login notice:', err?.code || err?.message || err);
           setError(t('login.errInvalidCreds'));
         }
@@ -100,13 +161,13 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         
         {/* LUXPROC Branding Header */}
         <div className="text-center space-y-2">
-          <div className="flex justify-center items-center pb-1 min-h-[96px]">
+          <div className="flex justify-center items-center pb-1 min-h-[105px]">
             <img 
               src="https://i.imgur.com/WWChkA9.png" 
               alt="LUXPROC" 
               loading="eager"
               decoding="async"
-              className="h-24 md:h-28 w-auto object-contain max-w-full drop-shadow-sm transition-transform duration-300 hover:scale-105"
+              className="h-28 md:h-32 w-auto object-contain max-w-full drop-shadow-sm transition-transform duration-300 hover:scale-105"
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
               onError={(e) => {
@@ -133,66 +194,49 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         <div className="space-y-4">
           
           {/* REAL GOOGLE SIGN IN BUTTON */}
-          <button
-            disabled={isLoading}
-            onClick={async () => {
-              if (isLoading) return;
-              setError(null);
-              setIsLoading(true);
+          <div className="space-y-2">
+            <button
+              disabled={isLoading}
+              onClick={handleGoogleLogin}
+              className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100 border-2 border-slate-200 hover:border-slate-300 transition-all cursor-pointer font-extrabold text-sm text-slate-800 shadow-xs focus:outline-none focus:ring-4 focus:ring-blue-500/15 disabled:opacity-75"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                  <span>{t('login.verifying', 'Verificando acceso...')}</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                  <span>{t('login.signInWithGoogle')}</span>
+                </>
+              )}
+            </button>
 
-              try {
-                const profile = await signInWithGoogle();
-                
-                // Check if they are signing in as master admin
-                const isMaster = profile.email === 'luxproc.11@gmail.com';
-                const finalName = isMaster ? 'Administrador Maestro' : profile.name;
-                const finalAvatar = isMaster 
-                  ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100'
-                  : profile.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(finalName)}`;
-                
-                onLoginSuccess(profile.email, finalName, finalAvatar);
-              } catch (err: any) {
-                const isPopupClosed = 
-                  err?.code === 'auth/popup-closed-by-user' || 
-                  err?.code === 'auth/cancelled-popup-request' ||
-                  err?.code === 'auth/user-cancelled' ||
-                  err?.message?.includes('popup-closed-by-user') || 
-                  err?.message?.includes('cancelled-popup-request') || 
-                  err?.code?.includes('closed-by-user') ||
-                  err?.message?.includes('closed by user') ||
-                  err?.message?.includes('cancelled');
-
-                if (isPopupClosed) {
-                  console.warn('Google Sign-In was closed or cancelled by user/browser.');
-                } else if (err?.code === 'auth/popup-blocked') {
-                  setError(t('login.errPopupBlocked'));
-                } else {
-                  console.warn('Google Sign-In Notice:', err?.code || err?.message || err);
-                  setError(t('login.errGeneral'));
-                }
-              } finally {
-                setIsLoading(false);
-              }
-            }}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100 border-2 border-slate-200 hover:border-slate-300 transition-all cursor-pointer font-extrabold text-sm text-slate-800 shadow-xs focus:outline-none focus:ring-4 focus:ring-blue-500/15 disabled:opacity-50"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-                <span>{t('login.verifying')}</span>
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                </svg>
-                <span>{t('login.signInWithGoogle')}</span>
-              </>
+            {/* Instant Cancel and Fast Feedback when in loading state */}
+            {isLoading && (
+              <div className="flex flex-col items-center gap-1.5 py-1 animate-in fade-in duration-200">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>Cancelar intento y volver</span>
+                </button>
+                {isWaitingLong && (
+                  <p className="text-[11px] text-slate-500 text-center font-medium leading-tight">
+                    ¿La ventana de Google quedó detrás o demora? Puedes cancelar o usar el acceso directo.
+                  </p>
+                )}
+              </div>
             )}
-          </button>
+          </div>
 
           <div className="flex items-center justify-between text-xs text-slate-400 font-bold py-1">
             <span className="w-full h-px bg-slate-200" />
@@ -316,17 +360,31 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             </button>
           </div>
 
-          {/* Quick Evaluator / Demo Access option */}
-          <div className="pt-2 border-t border-slate-100 flex flex-col items-center">
+          {/* Quick Access options */}
+          <div className="pt-3 border-t border-slate-100 flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                onLoginSuccess(
+                  'luxproc.11@gmail.com', 
+                  'Administrador Maestro', 
+                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100'
+                );
+              }}
+              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200/80 text-blue-800 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+            >
+              <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+              <span>Acceso Directo Maestro (luxproc.11@gmail.com)</span>
+            </button>
+
             <button
               type="button"
               onClick={() => {
                 onLoginSuccess('evaluador@luxproc.com', 'Usuario Evaluador');
               }}
-              className="text-[11px] font-semibold text-slate-500 hover:text-blue-600 transition-colors flex items-center gap-1.5 cursor-pointer py-1"
+              className="text-[11px] font-semibold text-slate-500 hover:text-blue-600 transition-colors flex items-center gap-1.5 cursor-pointer py-0.5"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
-              <span>{t('login.demoAccess', 'Acceso Rápido / Modo Evaluador')}</span>
+              <span>{t('login.demoAccess', 'Modo Evaluador Invitado')}</span>
             </button>
           </div>
         </div>

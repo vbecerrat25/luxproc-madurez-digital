@@ -10,6 +10,7 @@ import PrioritizationMatrix from './PrioritizationMatrix';
 import RoiCalculator from './RoiCalculator';
 import FullDocumentReport from './FullDocumentReport';
 import EvolutionComparisonView from './EvolutionComparisonView';
+import PlatformBenchmarkRecharts from './PlatformBenchmarkRecharts';
 import { useLanguage } from '../i18n/LanguageContext';
 import { getTranslatedRecommendations, getTranslatedRoadmapPhases } from '../i18n/recommendationsTranslations';
 import { 
@@ -33,6 +34,7 @@ export default function ResultsDashboard({ record, userRecords = [], onRestart, 
   const { t, language, getMaturityLevelI18n } = useLanguage();
   const levelInfo = getMaturityLevelI18n(metrics.general);
   const [activeTab, setActiveTab] = useState<'overview' | 'comparison' | 'roadmap' | 'roi' | 'evolution'>('overview');
+  const [comparisonScope, setComparisonScope] = useState<'both' | 'platform' | 'sector'>('both');
   const [showPrintMenu, setShowPrintMenu] = useState(false);
 
   // Find previous records for this user (same email, different id)
@@ -448,6 +450,14 @@ export default function ResultsDashboard({ record, userRecords = [], onRestart, 
                 </div>
               </div>
 
+              {/* RECHARTS PLATFORM HISTORICAL BENCHMARK */}
+              <PlatformBenchmarkRecharts
+                metrics={metrics}
+                userRecords={userRecords}
+                companyName={companyInfo.name}
+                sector={companyInfo.sector}
+              />
+
               {/* Interactive Sector Comparison Teaser Banner */}
               <div className="p-5 rounded-2xl border-2 border-blue-200/80 dark:border-blue-900/60 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-cyan-50/40 dark:from-[#0c162e] dark:via-[#0b1328] dark:to-[#071120] shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1">
@@ -682,8 +692,64 @@ export default function ResultsDashboard({ record, userRecords = [], onRestart, 
           {activeTab === 'comparison' && (
             <div className="space-y-6 animate-in fade-in duration-300">
               
-              {/* Prominent Sector Benchmark with Real-Time Switcher, Dynamic Dual Bars, Overlay Radar & Live Simulator */}
-              <SectorBenchmarkChart metrics={metrics} sector={companyInfo.sector} />
+              {/* Comparative Scope Switcher: Platform Historical (Recharts) vs Sector Benchmark */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl">
+                <div>
+                  <span className="text-xs font-black text-slate-800 dark:text-slate-200 block">
+                    {language === 'en' ? 'Select Comparison Scope' : 'Selecciona el Alcance Comparativo'}
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {language === 'en' ? 'Toggle between Platform Historical Average (Recharts) and Sector Benchmark' : 'Alterna entre el Histórico General de la Plataforma (Recharts) y el Benchmark Sectorial'}
+                  </span>
+                </div>
+                <div className="flex p-1 rounded-xl bg-slate-200/80 dark:bg-slate-800 gap-1 self-start sm:self-auto">
+                  <button
+                    onClick={() => setComparisonScope('both')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                      comparisonScope === 'both'
+                        ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {language === 'en' ? 'Both Benchmarks' : 'Ambos'}
+                  </button>
+                  <button
+                    onClick={() => setComparisonScope('platform')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                      comparisonScope === 'platform'
+                        ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {language === 'en' ? 'Platform Historical (Recharts)' : 'Histórico Plataforma (Recharts)'}
+                  </button>
+                  <button
+                    onClick={() => setComparisonScope('sector')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                      comparisonScope === 'sector'
+                        ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {language === 'en' ? `Sector (${localizedSector})` : `Sectorial (${localizedSector})`}
+                  </button>
+                </div>
+              </div>
+
+              {/* 1. Recharts Platform Historical Benchmark Visualization */}
+              {(comparisonScope === 'both' || comparisonScope === 'platform') && (
+                <PlatformBenchmarkRecharts 
+                  metrics={metrics}
+                  userRecords={userRecords}
+                  companyName={companyInfo.name}
+                  sector={companyInfo.sector}
+                />
+              )}
+
+              {/* 2. Prominent Sector Benchmark with Real-Time Switcher, Dynamic Dual Bars, Overlay Radar & Live Simulator */}
+              {(comparisonScope === 'both' || comparisonScope === 'sector') && (
+                <SectorBenchmarkChart metrics={metrics} sector={companyInfo.sector} />
+              )}
 
               {/* Gap Analysis Matrix Component */}
               <div className="border-t border-slate-100 dark:border-slate-800/80 pt-6">

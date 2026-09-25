@@ -6,6 +6,7 @@ interface ModalProps {
   onClose: () => void;
   onStartSurvey: () => void;
   onViewResults?: () => void;
+  onRestartTour?: () => void;
   hasRecord?: boolean;
 }
 
@@ -14,6 +15,7 @@ export default function HomeFeatureModals({
   onClose,
   onStartSurvey,
   onViewResults,
+  onRestartTour,
   hasRecord
 }: ModalProps) {
   if (!type) return null;
@@ -282,6 +284,20 @@ export default function HomeFeatureModals({
                 <span className="font-mono text-slate-500 dark:text-slate-400">luxproc.com</span>
               </div>
             </div>
+
+            {onRestartTour && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onRestartTour();
+                }}
+                className="w-full py-2.5 rounded-xl border border-cyan-500/40 bg-cyan-50/50 dark:bg-cyan-950/30 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-100 dark:hover:bg-cyan-900/40 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all"
+              >
+                <Sparkles className="w-4 h-4 text-cyan-500" />
+                <span>Iniciar Guía Interactiva (Tour de Bienvenida)</span>
+              </button>
+            )}
+
             <button
               onClick={onClose}
               className="w-full mt-2 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs cursor-pointer"

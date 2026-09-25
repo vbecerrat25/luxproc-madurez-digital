@@ -95,7 +95,7 @@ export default function HomeDashboardView({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         
         {/* LEFT HERO BANNER (~68% on Desktop / 8 cols) */}
-        <div className="lg:col-span-8 rounded-3xl bg-gradient-to-br from-[#0c234b] via-[#0b3a6b] to-[#04596b] border border-cyan-500/20 shadow-xl relative overflow-hidden p-6 sm:p-7 md:p-8 flex flex-col justify-between text-white">
+        <div id="tour-hero-card" className="lg:col-span-8 rounded-3xl bg-gradient-to-br from-[#0c234b] via-[#0b3a6b] to-[#04596b] border border-cyan-500/20 shadow-xl relative overflow-hidden p-6 sm:p-7 md:p-8 flex flex-col justify-between text-white">
           
           {/* Subtle Cyber Grid & Ambient Highlights */}
           <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:20px_20px] opacity-15 pointer-events-none" />
@@ -130,6 +130,7 @@ export default function HomeDashboardView({
               {/* Start Diagnosis Button */}
               <div className="pt-2">
                 <button
+                  id="tour-start-diag-btn"
                   onClick={onStartFresh}
                   className="group px-6 py-3 rounded-full bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-400 hover:from-blue-400 hover:to-teal-300 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2.5 shadow-lg shadow-cyan-500/25 hover:shadow-cyan-400/40 hover:scale-[1.02] active:scale-[0.99] transition-all cursor-pointer"
                 >
@@ -156,7 +157,7 @@ export default function HomeDashboardView({
         </div>
 
         {/* RIGHT WIDGET: "Tu nivel de madurez digital" (~32% on Desktop / 4 cols) */}
-        <div className="lg:col-span-4 rounded-3xl bg-white dark:bg-[#0d1629] border border-slate-200/90 dark:border-slate-800 p-5 sm:p-6 shadow-xs flex flex-col justify-between">
+        <div id="tour-maturity-widget" className="lg:col-span-4 rounded-3xl bg-white dark:bg-[#0d1629] border border-slate-200/90 dark:border-slate-800 p-5 sm:p-6 shadow-xs flex flex-col justify-between">
           
           {/* Header of Widget */}
           <div className="flex items-center justify-between gap-2 pb-2">
@@ -256,7 +257,7 @@ export default function HomeDashboardView({
       {/* -----------------------------------------
           2. FOUR BENEFIT CARDS (4-COLUMN ROW)
           ----------------------------------------- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div id="tour-benefit-cards" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Card 1: 100% Gratuito */}
         <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/90 dark:border-slate-800 p-5 shadow-xs flex flex-col justify-between hover:shadow-md transition-all group">
@@ -368,7 +369,7 @@ export default function HomeDashboardView({
       {/* -----------------------------------------
           3. MIS DIAGNÓSTICOS GUARDADOS
           ----------------------------------------- */}
-      <div className="pt-3 space-y-3">
+      <div id="tour-saved-history" className="pt-3 space-y-3">
         {/* Title */}
         <div>
           <h3 className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">

@@ -3,7 +3,7 @@ import {
   Sun, Moon, Building2, Timer, CheckCircle2, Zap, FileDown, BrainCircuit, 
   ShieldAlert, Sparkles, RefreshCw, Play, ArrowRight, ChevronRight, Activity, 
   Cpu, Laptop, Users, Printer, LogOut, Trash2, Loader2, Bell, ChevronDown, 
-  Menu, X, Settings 
+  Menu, X, Settings, HelpCircle 
 } from 'lucide-react';
 import { CompanyInfo, DiagnosticResponse, DiagnosticRecord } from './types';
 import { calculateMetrics } from './data';
@@ -15,6 +15,7 @@ import LanguageSelector from './components/LanguageSelector';
 import Sidebar from './components/Sidebar';
 import HomeDashboardView from './components/HomeDashboardView';
 import HomeFeatureModals from './components/HomeFeatureModals';
+import InteractiveTourOverlay from './components/InteractiveTourOverlay';
 import { useLanguage } from './i18n/LanguageContext';
 
 export default function App() {
@@ -39,6 +40,7 @@ export default function App() {
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
   const [showUserDropdown, setShowUserDropdown] = useState<boolean>(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
+  const [showTour, setShowTour] = useState<boolean>(false);
 
   // -----------------------------------------
   // HOOKS & PERSISTENCE
@@ -65,7 +67,16 @@ export default function App() {
     if (cachedUser) {
       const user = JSON.parse(cachedUser);
       setCurrentUser(user);
-      setRole(user.email.toLowerCase().trim() === 'luxproc.11@gmail.com' ? 'admin' : 'user');
+      const isAdmin = user.email.toLowerCase().trim() === 'luxproc.11@gmail.com';
+      setRole(isAdmin ? 'admin' : 'user');
+      
+      // Auto-trigger tour if first time logging in
+      const tourKey = `luxproc_tour_completed_${user.email.toLowerCase().trim()}`;
+      if (localStorage.getItem(tourKey) !== 'true') {
+        setTimeout(() => {
+          setShowTour(true);
+        }, 800);
+      }
     }
 
     // 3. Load permanent evaluations database (purging legacy mock IDs to start 100% blank)
@@ -508,6 +519,16 @@ export default function App() {
     } else {
       setView('home');
     }
+
+    // Check if user is logging in for the first time and auto-launch interactive tour
+    const tourKey = `luxproc_tour_completed_${email.toLowerCase().trim()}`;
+    const hasCompletedTour = localStorage.getItem(tourKey) === 'true';
+    if (!hasCompletedTour) {
+      setTimeout(() => {
+        setView('home');
+        setShowTour(true);
+      }, 500);
+    }
   };
 
   const handleLogout = () => {
@@ -516,6 +537,20 @@ export default function App() {
     setView('home');
     setActiveRecord(null);
     setRole('user');
+    setShowTour(false);
+  };
+
+  const handleTourComplete = () => {
+    if (currentUser) {
+      const tourKey = `luxproc_tour_completed_${currentUser.email.toLowerCase().trim()}`;
+      localStorage.setItem(tourKey, 'true');
+    }
+    setShowTour(false);
+  };
+
+  const handleTourStartDiagnosis = () => {
+    handleTourComplete();
+    handleStartFresh();
   };
 
   // -----------------------------------------
@@ -639,7 +674,7 @@ export default function App() {
                   <img 
                     src="https://i.imgur.com/WWChkA9.png" 
                     alt="LUXPROC" 
-                    className="h-9 sm:h-11 w-auto max-w-[130px] sm:max-w-[180px] object-contain"
+                    className="h-10 sm:h-12 w-auto max-w-[150px] sm:max-w-[200px] object-contain"
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
@@ -662,7 +697,7 @@ export default function App() {
               </div>
 
               {/* Right: Language Selector, Theme Toggle, Notifications, Logout Button, User Profile Pill */}
-              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <div id="tour-header-controls" className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 
                 {/* Multilingual Selector with Auto-Detect */}
                 <LanguageSelector compact />
@@ -692,6 +727,18 @@ export default function App() {
                   title={t('header.toggleTheme')}
                 >
                   {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                </button>
+
+                {/* Interactive Tour Guide Button */}
+                <button
+                  onClick={() => {
+                    setView('home');
+                    setShowTour(true);
+                  }}
+                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-300 transition-all cursor-pointer shadow-2xs shrink-0"
+                  title="Tour interactivo de la plataforma"
+                >
+                  <HelpCircle className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                 </button>
 
                 {/* Notification Bell with Badge */}
@@ -752,9 +799,20 @@ export default function App() {
                         <button
                           onClick={() => {
                             setShowUserDropdown(false);
+                            setView('home');
+                            setShowTour(true);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all cursor-pointer mt-1"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
+                          <span>Guía Interactiva (Tour)</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowUserDropdown(false);
                             setShowSettingsModal(true);
                           }}
-                          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer mt-1"
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
                         >
                           <Settings className="w-3.5 h-3.5 text-slate-400" />
                           <span>Configuración</span>
@@ -959,7 +1017,20 @@ export default function App() {
             setShowSettingsModal(false);
           }}
           onStartSurvey={handleStartFresh}
+          onRestartTour={() => {
+            setView('home');
+            setShowTour(true);
+          }}
           hasRecord={completedRecords.length > 0}
+        />
+
+        {/* First-Time User Interactive Tour Overlay */}
+        <InteractiveTourOverlay
+          isOpen={showTour}
+          onClose={handleTourComplete}
+          onComplete={handleTourComplete}
+          onStartDiagnosis={handleTourStartDiagnosis}
+          userName={currentUser?.name || 'Usuario'}
         />
 
       </div>
