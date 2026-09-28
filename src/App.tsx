@@ -17,6 +17,7 @@ import HomeDashboardView from './components/HomeDashboardView';
 import HomeFeatureModals from './components/HomeFeatureModals';
 import InteractiveTourOverlay from './components/InteractiveTourOverlay';
 import { useLanguage } from './i18n/LanguageContext';
+import { safeStorage } from './utils/storage';
 
 export default function App() {
   const { t, getMaturityLevelI18n } = useLanguage();
@@ -48,7 +49,7 @@ export default function App() {
   // Load initial settings and data on mount
   useEffect(() => {
     // 1. Theme Configuration
-    const cachedTheme = localStorage.getItem('loopsblock_theme') as 'light' | 'dark' | null;
+    const cachedTheme = safeStorage.getItem('loopsblock_theme') as 'light' | 'dark' | null;
     let defaultTheme = cachedTheme;
     if (!defaultTheme) {
       // Respect the device's system settings if no preference is saved yet
@@ -63,16 +64,15 @@ export default function App() {
     }
 
     // 2. Load User Session
-    const cachedUser = localStorage.getItem('luxproc_user');
-    if (cachedUser) {
-      const user = JSON.parse(cachedUser);
+    const user = safeStorage.getJSON<{ email: string; name: string; picture?: string } | null>('luxproc_user', null);
+    if (user && user.email) {
       setCurrentUser(user);
       const isAdmin = user.email.toLowerCase().trim() === 'luxproc.11@gmail.com';
       setRole(isAdmin ? 'admin' : 'user');
       
       // Auto-trigger tour if first time logging in
       const tourKey = `luxproc_tour_completed_${user.email.toLowerCase().trim()}`;
-      if (localStorage.getItem(tourKey) !== 'true') {
+      if (safeStorage.getItem(tourKey) !== 'true') {
         setTimeout(() => {
           setShowTour(true);
         }, 800);
@@ -81,14 +81,13 @@ export default function App() {
 
     // 3. Load permanent evaluations database (purging legacy mock IDs to start 100% blank)
     let parsedRecords: DiagnosticRecord[] = [];
-    const cachedRecords = localStorage.getItem('loopsblock_completed_diagnostics');
-    if (cachedRecords) {
+    const cachedRecords = safeStorage.getJSON<DiagnosticRecord[] | null>('loopsblock_completed_diagnostics', null);
+    if (Array.isArray(cachedRecords)) {
       try {
-        const raw = JSON.parse(cachedRecords);
         const legacyMockIds = new Set(['DIG-2026-981', 'DIG-2026-742', 'DIG-2026-413', 'DIG-2026-105', 'DIG-2026-211', 'DIG-2026-302']);
-        parsedRecords = Array.isArray(raw) ? raw.filter((r: DiagnosticRecord) => !legacyMockIds.has(r.id)) : [];
+        parsedRecords = cachedRecords.filter((r: DiagnosticRecord) => !legacyMockIds.has(r.id));
         setCompletedRecords(parsedRecords);
-        localStorage.setItem('loopsblock_completed_diagnostics', JSON.stringify(parsedRecords));
+        safeStorage.setJSON('loopsblock_completed_diagnostics', parsedRecords);
       } catch (e) {
         parsedRecords = [];
         setCompletedRecords([]);
@@ -96,29 +95,33 @@ export default function App() {
     }
 
     // Check for print view query parameter
-    const params = new URLSearchParams(window.location.search);
-    const isPrintView = params.get('print') === 'true';
-    const printId = params.get('id');
-    
-    if (isPrintView && printId) {
-      const allRecs = parsedRecords;
-      const record = allRecs.find(r => r.id === printId);
-      if (record) {
-        setActiveRecord(record);
-        setView('print');
-        // Automatically trigger print after elements are loaded
-        setTimeout(() => {
-          window.print();
-        }, 1000);
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const isPrintView = params.get('print') === 'true';
+      const printId = params.get('id');
+      
+      if (isPrintView && printId) {
+        const allRecs = parsedRecords;
+        const record = allRecs.find(r => r.id === printId);
+        if (record) {
+          setActiveRecord(record);
+          setView('print');
+          // Automatically trigger print after elements are loaded
+          setTimeout(() => {
+            window.print();
+          }, 1000);
+        }
       }
-    }
 
-    // 4. Check for ongoing draft
-    if (!isPrintView) {
-      const cachedStep = localStorage.getItem('loopsblock_draft_step');
-      if (cachedStep && Number(cachedStep) > 0) {
-        setHasDraft(true);
+      // 4. Check for ongoing draft
+      if (!isPrintView) {
+        const cachedStep = safeStorage.getItem('loopsblock_draft_step');
+        if (cachedStep && Number(cachedStep) > 0) {
+          setHasDraft(true);
+        }
       }
+    } catch (e) {
+      console.warn('URL params check notice:', e);
     }
   }, []);
 

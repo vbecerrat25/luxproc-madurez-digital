@@ -30,7 +30,8 @@ const getIcon = (iconName: string) => {
 export default function TechnicalTermPopover({ termKey }: TechnicalTermPopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const termData = TECHNICAL_TERMS[termKey];
+  const safeKey = typeof termKey === 'string' ? termKey.trim() : '';
+  const termData = safeKey ? TECHNICAL_TERMS[safeKey] : undefined;
 
   // Close when clicking outside
   useEffect(() => {
@@ -47,21 +48,27 @@ export default function TechnicalTermPopover({ termKey }: TechnicalTermPopoverPr
     };
   }, [isOpen]);
 
-  if (!termData) {
-    return <span className="font-semibold underline decoration-dotted">{termKey}</span>;
+  if (!safeKey) {
+    return null;
   }
+
+  if (!termData) {
+    return <span className="font-semibold underline decoration-dotted">{safeKey}</span>;
+  }
+
+  const safeButtonId = `help-btn-${safeKey.replace(/[^a-zA-Z0-9-_]/g, '-')}`;
 
   return (
     <span ref={popoverRef} className="relative inline-flex items-center gap-1 mx-1">
       <span className="font-semibold border-b border-dashed border-blue-400 dark:border-cyan-400 text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-cyan-300 transition-colors" onClick={() => setIsOpen(!isOpen)}>
-        {termKey}
+        {safeKey}
       </span>
       <button
-        id={`help-btn-${termKey.replace(/\s+/g, '-')}`}
+        id={safeButtonId}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="p-0.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-blue-500 dark:text-cyan-400 transition-all focus:outline-none focus:ring-1 focus:ring-blue-500"
-        aria-label={`Explicación de ${termKey}`}
+        className="p-0.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-blue-500 dark:text-cyan-400 transition-all focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+        aria-label={`Explicación de ${safeKey}`}
       >
         <HelpCircle className="w-3.5 h-3.5" />
       </button>

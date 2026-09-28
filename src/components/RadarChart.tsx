@@ -216,7 +216,7 @@ export default function RadarChart({
           {/* Perimeter Text Labels for Axes */}
           {axes.map((axis, i) => {
             const { x, y } = getCoordinates(i, 132);
-            let textAnchor = 'middle';
+            let textAnchor: 'middle' | 'end' | 'start' = 'middle';
             if (x < center - 15) {
               textAnchor = 'end';
             } else if (x > center + 15) {

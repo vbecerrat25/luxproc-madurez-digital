@@ -30,11 +30,15 @@ const setupFavicon = () => {
 // Invocar al inicio de la aplicación
 setupFavicon();
 
+import ErrorBoundary from './components/ErrorBoundary';
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <LanguageProvider>
-      <App />
-    </LanguageProvider>
+    <ErrorBoundary>
+      <LanguageProvider>
+        <App />
+      </LanguageProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );
 

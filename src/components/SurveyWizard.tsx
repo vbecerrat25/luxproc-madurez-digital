@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CompanyInfo, DiagnosticResponse, SectorType, CompanySizeType, TargetCustomerType, Question, ScoreMetrics } from '../types';
 import TechnicalTermPopover from './TechnicalTermPopover';
 import { useLanguage } from '../i18n/LanguageContext';
+import { safeStorage } from '../utils/storage';
 import { 
   Building2, Mail, Compass, HelpCircle, ArrowRight, ArrowLeft, 
   Check, Play, Save, CheckCircle2, RotateCcw, Building, Users, Activity,
@@ -15,7 +16,7 @@ interface SurveyWizardProps {
 }
 
 export default function SurveyWizard({ onComplete, savedState, defaultEmail }: SurveyWizardProps) {
-  const { t, currentQuestions, currentDimensions } = useLanguage();
+  const { t, currentQuestions = [], currentDimensions = [] } = useLanguage();
 
   // Dynamic assessment modules based on current language
   const MODULES = [
@@ -46,7 +47,7 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
   ];
 
   // -----------------------------------------
-  // 1. STATE INITIALIZATION (W/ LOCALSTORAGE FALLBACK)
+  // 1. STATE INITIALIZATION (W/ SAFE STORAGE FALLBACK)
   // -----------------------------------------
   const [currentStep, setCurrentStep] = useState<number>(0); // 0 = Profile Setup, 1-19 = Questions
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
@@ -60,37 +61,49 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
   const [responses, setResponses] = useState<DiagnosticResponse[]>([]);
   const [isFormTouched, setIsFormTouched] = useState(false);
 
-  // Load from props or local storage
+  // Load from props or safe storage
   useEffect(() => {
-    const cachedCompany = localStorage.getItem('loopsblock_draft_company');
-    const cachedResponses = localStorage.getItem('loopsblock_draft_responses');
-    const cachedStep = localStorage.getItem('loopsblock_draft_step');
+    try {
+      if (savedState) {
+        setCompanyInfo(savedState.companyInfo);
+        setResponses(savedState.responses || []);
+        setCurrentStep(savedState.currentStep || 0);
+      } else {
+        const cachedCompany = safeStorage.getJSON<Partial<CompanyInfo> | null>('loopsblock_draft_company', null);
+        const cachedResponses = safeStorage.getJSON<DiagnosticResponse[] | null>('loopsblock_draft_responses', null);
+        const cachedStep = safeStorage.getItem('loopsblock_draft_step');
 
-    if (savedState) {
-      setCompanyInfo(savedState.companyInfo);
-      setResponses(savedState.responses);
-      setCurrentStep(savedState.currentStep);
-    } else {
-      let company: CompanyInfo = {
-        name: '',
-        contactEmail: defaultEmail || '',
-        sector: 'Comercio' as SectorType,
-        targetCustomer: 'BOTH' as TargetCustomerType,
-        size: 'Micro' as CompanySizeType,
-        country: 'Perú'
-      };
-      if (cachedCompany) {
-        const parsed = JSON.parse(cachedCompany);
-        company = { ...company, ...parsed };
+        let company: CompanyInfo = {
+          name: '',
+          contactEmail: defaultEmail || '',
+          sector: 'Comercio' as SectorType,
+          targetCustomer: 'BOTH' as TargetCustomerType,
+          size: 'Micro' as CompanySizeType,
+          country: 'Perú'
+        };
+
+        if (cachedCompany && typeof cachedCompany === 'object') {
+          company = { ...company, ...cachedCompany };
+        }
+        if (defaultEmail) {
+          company.contactEmail = defaultEmail;
+        }
+
+        setCompanyInfo(company);
+        if (Array.isArray(cachedResponses)) {
+          setResponses(cachedResponses);
+        }
+        if (cachedStep) {
+          const stepNum = Number(cachedStep);
+          if (!isNaN(stepNum) && stepNum >= 0) {
+            setCurrentStep(stepNum);
+          }
+        }
       }
-      if (defaultEmail) {
-        company.contactEmail = defaultEmail;
-      }
-      setCompanyInfo(company);
-      if (cachedResponses) setResponses(JSON.parse(cachedResponses));
-      if (cachedStep) setCurrentStep(Number(cachedStep));
+    } catch (err) {
+      console.warn('Error al cargar borrador:', err);
     }
-  }, [savedState]);
+  }, [savedState, defaultEmail]);
 
   // Keep contactEmail synchronized in real-time with defaultEmail (from Google login)
   useEffect(() => {
@@ -98,7 +111,7 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
       setCompanyInfo(prev => {
         if (prev.contactEmail !== defaultEmail) {
           const nextInfo = { ...prev, contactEmail: defaultEmail };
-          localStorage.setItem('loopsblock_draft_company', JSON.stringify(nextInfo));
+          safeStorage.setJSON('loopsblock_draft_company', nextInfo);
           return nextInfo;
         }
         return prev;
@@ -106,17 +119,25 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
     }
   }, [defaultEmail]);
 
-  // Persist draft progress changes immediately to local storage
+  // Persist draft progress changes safely
   const saveProgressDraft = (updatedInfo: CompanyInfo, updatedResponses: DiagnosticResponse[], updatedStep: number) => {
-    localStorage.setItem('loopsblock_draft_company', JSON.stringify(updatedInfo));
-    localStorage.setItem('loopsblock_draft_responses', JSON.stringify(updatedResponses));
-    localStorage.setItem('loopsblock_draft_step', updatedStep.toString());
+    try {
+      safeStorage.setJSON('loopsblock_draft_company', updatedInfo);
+      safeStorage.setJSON('loopsblock_draft_responses', updatedResponses);
+      safeStorage.setItem('loopsblock_draft_step', updatedStep.toString());
+    } catch (e) {
+      console.warn('Error al guardar borrador de progreso:', e);
+    }
   };
 
   const resetProgressDraft = () => {
-    localStorage.removeItem('loopsblock_draft_company');
-    localStorage.removeItem('loopsblock_draft_responses');
-    localStorage.removeItem('loopsblock_draft_step');
+    try {
+      safeStorage.removeItem('loopsblock_draft_company');
+      safeStorage.removeItem('loopsblock_draft_responses');
+      safeStorage.removeItem('loopsblock_draft_step');
+    } catch (e) {
+      console.warn('Error al limpiar borrador:', e);
+    }
     setCompanyInfo({
       name: '',
       contactEmail: defaultEmail || '',
@@ -134,16 +155,22 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
   // -----------------------------------------
   const handleCompanyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    const nextInfo = { ...companyInfo, [name]: value };
-    setCompanyInfo(nextInfo);
-    saveProgressDraft(nextInfo, responses, currentStep);
+    setCompanyInfo(prev => {
+      const nextInfo = { ...prev, [name]: value };
+      saveProgressDraft(nextInfo, responses, currentStep);
+      return nextInfo;
+    });
   };
 
   const handleStartSurvey = (e: React.FormEvent) => {
     e.preventDefault();
     setIsFormTouched(true);
 
-    if (!companyInfo.name.trim() || !companyInfo.contactEmail.trim() || !companyInfo.country.trim()) {
+    const safeName = (companyInfo.name || '').trim();
+    const safeEmail = (companyInfo.contactEmail || '').trim();
+    const safeCountry = (companyInfo.country || '').trim();
+
+    if (!safeName || !safeEmail || !safeCountry) {
       return;
     }
 
@@ -156,6 +183,15 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
   // 3. SELECTION HANDLERS
   // -----------------------------------------
   const getQuestionByStep = (stepIndex: number): Question => {
+    if (!currentQuestions || currentQuestions.length === 0) {
+      return {
+        id: 'Q1',
+        dimensionId: 1,
+        text: 'Cargando pregunta...',
+        type: 'single',
+        options: []
+      };
+    }
     return currentQuestions[stepIndex - 1] || currentQuestions[0];
   };
 
@@ -253,20 +289,24 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
     : 0;
 
   // Global questionnaire percentage
-  const globalProgressPercent = Math.round((currentStep / currentQuestions.length) * 100);
+  const totalQuestionsCount = (currentQuestions && currentQuestions.length > 0) ? currentQuestions.length : 20;
+  const globalProgressPercent = Math.min(100, Math.round((currentStep / totalQuestionsCount) * 100));
 
   // Helper to check if a technical word is mentioned in the question title
   const renderQuestionWithPopovers = (text: string, helpTerm?: string) => {
-    if (!helpTerm) return <span>{text}</span>;
+    const safeText = typeof text === 'string' ? text : '';
+    if (!helpTerm || typeof helpTerm !== 'string' || !safeText.includes(helpTerm)) {
+      return <span>{safeText}</span>;
+    }
 
-    const parts = text.split(helpTerm);
-    if (parts.length < 2) return <span>{text}</span>;
+    const parts = safeText.split(helpTerm);
+    if (parts.length < 2) return <span>{safeText}</span>;
 
     return (
       <span>
         {parts[0]}
         <TechnicalTermPopover termKey={helpTerm} />
-        {parts[1]}
+        {parts.slice(1).join(helpTerm)}
       </span>
     );
   };
@@ -329,7 +369,7 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
                 placeholder={t('survey.companyNamePlaceholder')}
                 className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#060c18] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm font-medium focus:outline-none focus:bg-white dark:focus:bg-[#0a1222] focus:border-blue-600 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all shadow-2xs hover:border-slate-300 dark:hover:border-slate-600"
               />
-              {isFormTouched && !companyInfo.name.trim() && (
+              {isFormTouched && !(companyInfo.name || '').trim() && (
                 <span className="text-[11px] text-red-500 font-bold block">{t('survey.nameRequired')}</span>
               )}
             </div>
@@ -373,7 +413,7 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
                   </div>
                 )}
               </div>
-              {isFormTouched && !companyInfo.contactEmail.trim() && (
+              {isFormTouched && !(companyInfo.contactEmail || '').trim() && (
                 <span className="text-[11px] text-red-500 font-bold block">{t('survey.emailRequired')}</span>
               )}
             </div>
@@ -388,7 +428,9 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
                     <Store className="w-3.5 h-3.5 text-blue-500" />
                     <span>{t('survey.sector')} (Actividad Principal)</span>
                   </label>
-                  <TechnicalTermPopover termKey={companyInfo.sector === 'Manufactura' ? 'Fábrica' : companyInfo.sector} />
+                  <span className="text-[11px] font-semibold text-blue-600 dark:text-cyan-400">
+                    {companyInfo.sector}
+                  </span>
                 </div>
                 <select
                   id="company-sector"
@@ -423,7 +465,9 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
                     <Users className="w-3.5 h-3.5 text-blue-500" />
                     <span>¿A quién le vende principalmente?</span>
                   </label>
-                  <TechnicalTermPopover termKey={companyInfo.targetCustomer === 'B2B' ? 'B2B' : 'B2C'} />
+                  <span className="text-[11px] font-semibold text-blue-600 dark:text-cyan-400">
+                    {companyInfo.targetCustomer === 'B2B' ? 'B2B' : companyInfo.targetCustomer === 'B2C' ? 'B2C' : 'Mixto'}
+                  </span>
                 </div>
                 <select
                   id="company-target-customer"

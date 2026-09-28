@@ -1,6 +1,6 @@
 export type SectorType = 'Comercio' | 'Servicios' | 'Manufactura' | 'Tecnología' | 'Agropecuario' | 'Construcción' | 'Otro';
 export type CompanySizeType = 'Micro' | 'Pequeña' | 'Mediana' | 'Grande';
-export type TargetCustomerType = 'Personas' | 'Empresas' | 'Ambos';
+export type TargetCustomerType = 'B2C' | 'B2B' | 'BOTH' | 'Personas' | 'Empresas' | 'Ambos';
 
 export interface CompanyInfo {
   name: string;

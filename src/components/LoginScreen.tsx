@@ -70,10 +70,17 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       
       onLoginSuccess(profile.email, finalName, finalAvatar);
     } catch (err: any) {
-      if (err?.message === 'POPUP_BLOCKED') {
-        setError(t('login.errPopupBlocked', 'La ventana emergente fue bloqueada por el navegador. Por favor permite las ventanas emergentes o usa tu correo.'));
+      console.error('Google Sign-In Error:', err);
+      if (err?.message === 'POPUP_BLOCKED' || err?.code === 'auth/popup-blocked') {
+        setError(t('login.errPopupBlocked', 'La ventana emergente fue bloqueada por el navegador. Por favor permite las ventanas emergentes.'));
+      } else if (err?.code === 'auth/operation-not-allowed') {
+        setError('El proveedor de Google no está habilitado en Firebase Authentication > Proveedores de acceso.');
+      } else if (err?.code === 'auth/unauthorized-domain') {
+        setError('El dominio actual no está autorizado en Firebase. Verifica la lista de Dominios Autorizados.');
+      } else if (err?.code) {
+        setError(`Error (${err.code}): ${err.message || 'No se pudo completar el inicio de sesión.'}`);
       } else {
-        setError(t('login.errGeneral', 'No se pudo completar el inicio de sesión. Por favor intenta nuevamente.'));
+        setError(err?.message || t('login.errGeneral', 'No se pudo completar el inicio de sesión. Por favor intenta nuevamente.'));
       }
     } finally {
       setIsLoading(false);
@@ -357,34 +364,6 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
               {isRegistering 
                 ? t('login.haveAccount') 
                 : t('login.noAccount')}
-            </button>
-          </div>
-
-          {/* Quick Access options */}
-          <div className="pt-3 border-t border-slate-100 flex flex-col items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                onLoginSuccess(
-                  'luxproc.11@gmail.com', 
-                  'Administrador Maestro', 
-                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100'
-                );
-              }}
-              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200/80 text-blue-800 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
-            >
-              <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-              <span>Acceso Directo Maestro (luxproc.11@gmail.com)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                onLoginSuccess('evaluador@luxproc.com', 'Usuario Evaluador');
-              }}
-              className="text-[11px] font-semibold text-slate-500 hover:text-blue-600 transition-colors flex items-center gap-1.5 cursor-pointer py-0.5"
-            >
-              <span>{t('login.demoAccess', 'Modo Evaluador Invitado')}</span>
             </button>
           </div>
         </div>
