@@ -64,6 +64,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
+  // Mantener el atributo html lang sincronizado con el idioma activo
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = language;
+    }
+  }, [language]);
+
   // Listen to browser language changes if auto-detect is active
   useEffect(() => {
     if (isAutoDetect) {
