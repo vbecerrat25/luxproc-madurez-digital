@@ -334,7 +334,7 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
 
       {/* STEP 0: WELCOME & GENERAL PROFILE FORM */}
       {currentStep === 0 ? (
-        <div className="p-8 md:p-10 rounded-3xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1426] shadow-xl shadow-slate-200/50 dark:shadow-black/60 relative overflow-hidden animate-in fade-in zoom-in-95 duration-500">
+        <div className="p-4 sm:p-7 md:p-10 rounded-2xl sm:rounded-3xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1426] shadow-xl shadow-slate-200/50 dark:shadow-black/60 relative overflow-hidden animate-in fade-in zoom-in-95 duration-500">
           <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl" />
           
           <div className="flex items-center gap-3 mb-6">
@@ -609,7 +609,7 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
 
           {/* Core Question Layout */}
           {currentQuestion && (
-            <div className="p-8 md:p-10 rounded-3xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1426] shadow-xl shadow-slate-200/50 dark:shadow-black/60 relative overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="p-4 sm:p-7 md:p-10 rounded-2xl sm:rounded-3xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1426] shadow-xl shadow-slate-200/50 dark:shadow-black/60 relative overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300">
               
               <div className="space-y-4">
                 {/* Section Badge */}
@@ -619,7 +619,7 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
                 </span>
 
                 {/* Question title */}
-                <h2 className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-relaxed">
+                <h2 className="text-base sm:text-lg md:text-xl font-black text-slate-900 dark:text-white leading-relaxed">
                   {renderQuestionWithPopovers(currentQuestion.text, currentQuestion.helpTerm)}
                 </h2>
 
@@ -631,7 +631,7 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
                 </p>
 
                 {/* List of selectable options (Casillas de Selección) */}
-                <div className="space-y-3.5 mt-6">
+                <div className="space-y-3 mt-5 sm:mt-6">
                   {currentQuestion.options.map((opt) => {
                     const isSelected = currentResponse?.selectedOptionIds.includes(opt.id) || false;
                     
@@ -641,7 +641,7 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
                         key={opt.id}
                         type="button"
                         onClick={() => handleOptionToggle(opt.id)}
-                        className={`w-full text-left p-4.5 rounded-2xl border-2 transition-all duration-200 text-sm font-semibold flex items-start gap-3.5 cursor-pointer transform hover:-translate-y-0.5 ${
+                        className={`w-full text-left p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 text-xs sm:text-sm font-semibold flex items-start gap-3 cursor-pointer transform hover:-translate-y-0.5 ${
                           isSelected
                             ? 'bg-blue-50/95 dark:bg-[#0c1c38] border-blue-600 dark:border-blue-500 text-blue-950 dark:text-white shadow-md ring-2 ring-blue-500/20 dark:ring-blue-400/30'
                             : 'bg-slate-50 hover:bg-blue-50/60 dark:bg-[#060c18] dark:hover:bg-[#0c172d] border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500/80 text-slate-800 dark:text-slate-200 shadow-2xs'

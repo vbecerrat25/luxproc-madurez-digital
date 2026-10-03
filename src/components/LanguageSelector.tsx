@@ -58,7 +58,7 @@ export default function LanguageSelector({ compact = false }: LanguageSelectorPr
             {isAutoDetect && (
               <span className="text-blue-500 dark:text-blue-400 flex items-center gap-1 font-medium lowercase">
                 <Sparkles className="w-3 h-3" />
-                auto-activo
+                {language === 'en' ? 'auto-active' : language === 'pt' ? 'auto-ativo' : 'auto-activo'}
               </span>
             )}
           </div>
@@ -78,7 +78,7 @@ export default function LanguageSelector({ compact = false }: LanguageSelectorPr
           >
             <div className="flex items-center gap-2">
               <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-              <span>{t('header.autoDetect')} (Navegador)</span>
+              <span>{t('header.autoDetect')} {language === 'en' ? '(Browser)' : '(Navegador)'}</span>
             </div>
             {isAutoDetect && <Check className="w-3.5 h-3.5 text-blue-500" />}
           </button>

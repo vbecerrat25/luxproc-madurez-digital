@@ -6,6 +6,7 @@ import {
   Sparkles, 
   FileText, 
   Settings, 
+  CalendarCheck,
   Rocket, 
   ShieldAlert,
   LogOut
@@ -13,8 +14,8 @@ import {
 import { useLanguage } from '../i18n/LanguageContext';
 
 export interface SidebarProps {
-  currentTab: 'home' | 'survey' | 'results' | 'recommendations' | 'reports' | 'settings' | 'admin';
-  onSelectTab: (tab: 'home' | 'survey' | 'results' | 'recommendations' | 'reports' | 'settings' | 'admin') => void;
+  currentTab: 'home' | 'survey' | 'results' | 'recommendations' | 'reports' | 'settings' | 'schedule' | 'admin';
+  onSelectTab: (tab: 'home' | 'survey' | 'results' | 'recommendations' | 'reports' | 'settings' | 'schedule' | 'admin') => void;
   hasRecords: boolean;
   isAdmin?: boolean;
   currentUser?: { name: string; email: string; picture?: string } | null;
@@ -34,7 +35,7 @@ export default function Sidebar({
   const navItems = [
     {
       id: 'home' as const,
-      label: t('header.home', 'Inicio'),
+      label: t('nav.home', 'Inicio'),
       icon: Home,
     },
     {
@@ -61,6 +62,11 @@ export default function Sidebar({
       id: 'settings' as const,
       label: t('nav.settings', 'Configuración'),
       icon: Settings,
+    },
+    {
+      id: 'schedule' as const,
+      label: t('nav.schedule', 'Agendar Reunión'),
+      icon: CalendarCheck,
     },
   ];
 
@@ -97,7 +103,7 @@ export default function Sidebar({
             }`}
           >
             <ShieldAlert className="w-4 h-4 shrink-0" />
-            <span className="truncate">{t('header.admin', 'Panel Admin')}</span>
+            <span className="truncate">{t('nav.admin', 'Panel Admin')}</span>
           </button>
         )}
 
@@ -127,10 +133,10 @@ export default function Sidebar({
 
         {/* Card Title & Copy */}
         <h4 className="text-xs font-black text-slate-900 dark:text-white leading-snug tracking-tight">
-          Tu transformación digital comienza aquí
+          {t('sidebar.promoTitle', 'Tu transformación digital comienza aquí')}
         </h4>
         <p className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-          Conoce tu nivel de madurez y da el siguiente paso hacia el crecimiento.
+          {t('sidebar.promoDesc', 'Conoce tu nivel de madurez y da el siguiente paso hacia el crecimiento.')}
         </p>
       </div>
     </aside>

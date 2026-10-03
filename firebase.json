@@ -1,7 +1,7 @@
 {
   "hosting": [
     {
-      "target": "sitio-diags",
+      "target": "sitio-madurez",
       "public": "dist",
       "ignore": [
         "firebase.json",

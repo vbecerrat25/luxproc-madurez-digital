@@ -3,7 +3,7 @@ import {
   Sun, Moon, Building2, Timer, CheckCircle2, Zap, FileDown, BrainCircuit, 
   ShieldAlert, Sparkles, RefreshCw, Play, ArrowRight, ChevronRight, Activity, 
   Cpu, Laptop, Users, Printer, LogOut, Trash2, Loader2, Bell, ChevronDown, 
-  Menu, X, Settings, HelpCircle 
+  Menu, X, Settings, HelpCircle, CalendarCheck 
 } from 'lucide-react';
 import { CompanyInfo, DiagnosticResponse, DiagnosticRecord } from './types';
 import { calculateMetrics } from './data';
@@ -16,6 +16,8 @@ import Sidebar from './components/Sidebar';
 import HomeDashboardView from './components/HomeDashboardView';
 import HomeFeatureModals from './components/HomeFeatureModals';
 import InteractiveTourOverlay from './components/InteractiveTourOverlay';
+import ScheduleMeetingModal from './components/ScheduleMeetingModal';
+import NotificationsModal, { AppNotification } from './components/NotificationsModal';
 import { useLanguage } from './i18n/LanguageContext';
 import { safeStorage } from './utils/storage';
 
@@ -30,7 +32,6 @@ export default function App() {
   const [view, setView] = useState<'home' | 'survey' | 'results' | 'admin' | 'print'>('home');
   const [previousView, setPreviousView] = useState<'home' | 'results' | 'admin'>('home');
 
-  
   const [completedRecords, setCompletedRecords] = useState<DiagnosticRecord[]>([]);
   const [activeRecord, setActiveRecord] = useState<DiagnosticRecord | null>(null);
   const [hasDraft, setHasDraft] = useState<boolean>(false);
@@ -38,10 +39,42 @@ export default function App() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
   const [showIframeNotice, setShowIframeNotice] = useState<boolean>(false);
   const [showNotificationModal, setShowNotificationModal] = useState<boolean>(false);
+  const [showScheduleMeetingModal, setShowScheduleMeetingModal] = useState<boolean>(false);
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
   const [showUserDropdown, setShowUserDropdown] = useState<boolean>(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [showTour, setShowTour] = useState<boolean>(false);
+
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
+    const cached = safeStorage.getJSON<AppNotification[]>('luxproc_notifications', []);
+    if (cached && cached.length > 0) return cached;
+    return [
+      {
+        id: 'notif_welcome',
+        title: '¡Bienvenido a LUXPROC!',
+        message: 'Comienza tu diagnóstico de madurez digital para conocer las 20 dimensiones de tu empresa.',
+        category: 'update',
+        date: 'Hoy',
+        read: false,
+      },
+      {
+        id: 'notif_2026',
+        title: 'Modelo 2026 Activado',
+        message: 'Evaluación con dimensiones actualizadas de IA Generativa y Ciberseguridad.',
+        category: 'system',
+        date: '2026',
+        read: false,
+      },
+      {
+        id: 'notif_pdf',
+        title: 'Descarga Oficial en PDF',
+        message: 'Exporta tu informe con resumen ejecutivo, gráfico radar y 16 iniciativas priorizadas.',
+        category: 'report',
+        date: 'Activo',
+        read: true,
+      }
+    ];
+  });
 
   // -----------------------------------------
   // HOOKS & PERSISTENCE
@@ -70,9 +103,14 @@ export default function App() {
       const isAdmin = user.email.toLowerCase().trim() === 'luxproc.11@gmail.com';
       setRole(isAdmin ? 'admin' : 'user');
       
-      // Auto-trigger tour if first time logging in
+      // Auto-trigger tour strictly on the very first visit
       const tourKey = `luxproc_tour_completed_${user.email.toLowerCase().trim()}`;
-      if (safeStorage.getItem(tourKey) !== 'true') {
+      const hasSeenTour = 
+        safeStorage.getItem('luxproc_tour_completed_global') === 'true' ||
+        safeStorage.getItem(tourKey) === 'true';
+      if (!hasSeenTour) {
+        safeStorage.setItem('luxproc_tour_completed_global', 'true');
+        safeStorage.setItem(tourKey, 'true');
         setTimeout(() => {
           setShowTour(true);
         }, 800);
@@ -148,28 +186,46 @@ export default function App() {
     };
   }, []);
 
-  // Sync completed evaluations database to local storage
-  // Restricts user to at most 2 records, replacing the oldest
+  // Notification Handlers
+  const handleMarkAllNotificationsAsRead = () => {
+    const updated = notifications.map(n => ({ ...n, read: true }));
+    setNotifications(updated);
+    safeStorage.setJSON('luxproc_notifications', updated);
+  };
+
+  const handleMarkNotificationAsRead = (id: string) => {
+    const updated = notifications.map(n => n.id === id ? ({ ...n, read: true }) : n);
+    setNotifications(updated);
+    safeStorage.setJSON('luxproc_notifications', updated);
+  };
+
+  const handleClearNotifications = () => {
+    setNotifications([]);
+    safeStorage.setJSON('luxproc_notifications', []);
+  };
+
+  // Sync completed evaluations database to safe local storage
+  // Preserves evaluation records permanently so users can review/download PDF anytime
   const saveCompletedRecord = (newRecord: DiagnosticRecord) => {
-    const emailToFilter = newRecord.companyInfo.contactEmail.toLowerCase().trim();
-    
-    // Find existing records for this email
-    const userRecs = completedRecords.filter(
-      r => r.companyInfo.contactEmail.toLowerCase().trim() === emailToFilter
-    );
-
-    let updated = [...completedRecords];
-
-    if (userRecs.length >= 2) {
-      // Find the oldest record for this email (since records are prepended, the last item is the oldest)
-      const oldestUserRecord = userRecs[userRecs.length - 1];
-      // Filter out that oldest record
-      updated = updated.filter(r => r.id !== oldestUserRecord.id);
+    let updated = [newRecord, ...completedRecords.filter(r => r.id !== newRecord.id)];
+    if (updated.length > 50) {
+      updated = updated.slice(0, 50);
     }
-
-    updated = [newRecord, ...updated];
     setCompletedRecords(updated);
-    localStorage.setItem('loopsblock_completed_diagnostics', JSON.stringify(updated));
+    safeStorage.setJSON('loopsblock_completed_diagnostics', updated);
+
+    // Auto-create in-app notification
+    const completionNotif: AppNotification = {
+      id: `notif_${Date.now()}`,
+      title: '¡Evaluación Completada!',
+      message: `El informe oficial para ${newRecord.companyInfo.name} (${newRecord.metrics.general}%) ya está disponible para revisión y descarga en PDF.`,
+      category: 'report',
+      date: 'Justo ahora',
+      read: false
+    };
+    const updatedNotifs = [completionNotif, ...notifications];
+    setNotifications(updatedNotifs);
+    safeStorage.setJSON('luxproc_notifications', updatedNotifs);
   };
 
   // Delete a saved diagnostic record
@@ -523,10 +579,14 @@ export default function App() {
       setView('home');
     }
 
-    // Check if user is logging in for the first time and auto-launch interactive tour
+    // Auto-launch interactive tour strictly on first time
     const tourKey = `luxproc_tour_completed_${email.toLowerCase().trim()}`;
-    const hasCompletedTour = localStorage.getItem(tourKey) === 'true';
+    const hasCompletedTour = 
+      safeStorage.getItem('luxproc_tour_completed_global') === 'true' ||
+      safeStorage.getItem(tourKey) === 'true';
     if (!hasCompletedTour) {
+      safeStorage.setItem('luxproc_tour_completed_global', 'true');
+      safeStorage.setItem(tourKey, 'true');
       setTimeout(() => {
         setView('home');
         setShowTour(true);
@@ -536,7 +596,7 @@ export default function App() {
 
   const handleLogout = () => {
     setCurrentUser(null);
-    localStorage.removeItem('luxproc_user');
+    safeStorage.removeItem('luxproc_user');
     setView('home');
     setActiveRecord(null);
     setRole('user');
@@ -544,9 +604,10 @@ export default function App() {
   };
 
   const handleTourComplete = () => {
+    safeStorage.setItem('luxproc_tour_completed_global', 'true');
     if (currentUser) {
       const tourKey = `luxproc_tour_completed_${currentUser.email.toLowerCase().trim()}`;
-      localStorage.setItem(tourKey, 'true');
+      safeStorage.setItem(tourKey, 'true');
     }
     setShowTour(false);
   };
@@ -591,7 +652,7 @@ export default function App() {
     setView('survey');
   };
 
-  const handleSelectSidebarTab = (tab: 'home' | 'survey' | 'results' | 'recommendations' | 'reports' | 'settings' | 'admin') => {
+  const handleSelectSidebarTab = (tab: 'home' | 'survey' | 'results' | 'recommendations' | 'reports' | 'settings' | 'schedule' | 'admin') => {
     if (tab === 'home') {
       setView('home');
       setActiveRecord(null);
@@ -625,6 +686,8 @@ export default function App() {
       }
     } else if (tab === 'settings') {
       setShowSettingsModal(true);
+    } else if (tab === 'schedule') {
+      setShowScheduleMeetingModal(true);
     } else if (tab === 'admin') {
       setView('admin');
     }
@@ -725,20 +788,20 @@ export default function App() {
                 <button
                   id="theme-toggle-btn"
                   onClick={toggleTheme}
-                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 transition-all cursor-pointer focus:outline-none shadow-2xs shrink-0"
+                  className="p-1.5 sm:p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 transition-all cursor-pointer focus:outline-none shadow-2xs shrink-0"
                   aria-label={t('header.toggleTheme')}
                   title={t('header.toggleTheme')}
                 >
-                  {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                  {theme === 'light' ? <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
                 </button>
 
-                {/* Interactive Tour Guide Button */}
+                {/* Interactive Tour Guide Button (hidden on mobile, accessible via dropdown) */}
                 <button
                   onClick={() => {
                     setView('home');
                     setShowTour(true);
                   }}
-                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-300 transition-all cursor-pointer shadow-2xs shrink-0"
+                  className="hidden sm:flex p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-300 transition-all cursor-pointer shadow-2xs shrink-0"
                   title="Tour interactivo de la plataforma"
                 >
                   <HelpCircle className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
@@ -747,23 +810,27 @@ export default function App() {
                 {/* Notification Bell with Badge */}
                 <button
                   onClick={() => setShowNotificationModal(true)}
-                  className="relative p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 transition-all cursor-pointer shadow-2xs shrink-0"
+                  className="relative p-1.5 sm:p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 transition-all cursor-pointer shadow-2xs shrink-0"
                   title="Notificaciones"
                 >
-                  <Bell className="w-4 h-4" />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                  <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  {notifications.filter(n => !n.read).length > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-black text-white shadow-xs animate-pulse">
+                      {notifications.filter(n => !n.read).length}
+                    </span>
+                  )}
                 </button>
 
-                {/* DIRECT LOGOUT BUTTON: Always visible and accessible on mobile, tablet & desktop */}
+                {/* DIRECT LOGOUT BUTTON: Desktop & tablet */}
                 {currentUser && (
                   <button
                     id="header-logout-btn"
                     onClick={handleLogout}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/70 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-all text-xs font-bold shrink-0 cursor-pointer shadow-2xs"
+                    className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/70 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-all text-xs font-bold shrink-0 cursor-pointer shadow-2xs"
                     title={t('header.logout', 'Cerrar Sesión')}
                   >
                     <LogOut className="w-3.5 h-3.5" />
-                    <span className="hidden md:inline">{t('header.logout', 'Cerrar Sesión')}</span>
+                    <span>{t('header.logout', 'Cerrar Sesión')}</span>
                   </button>
                 )}
 
@@ -786,7 +853,7 @@ export default function App() {
                           {currentUser.name || 'Usuario'}
                         </span>
                         <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 leading-none">
-                          {role === 'admin' ? 'Administrador' : 'Empresa'}
+                          {role === 'admin' ? t('role.admin', 'Administrador') : t('role.user', 'Empresa')}
                         </span>
                       </div>
                       <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
@@ -808,7 +875,7 @@ export default function App() {
                           className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all cursor-pointer mt-1"
                         >
                           <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
-                          <span>Guía Interactiva (Tour)</span>
+                          <span>{t('header.tour', 'Guía Interactiva (Tour)')}</span>
                         </button>
                         <button
                           onClick={() => {
@@ -818,7 +885,17 @@ export default function App() {
                           className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
                         >
                           <Settings className="w-3.5 h-3.5 text-slate-400" />
-                          <span>Configuración</span>
+                          <span>{t('header.settings', 'Configuración')}</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowUserDropdown(false);
+                            setShowScheduleMeetingModal(true);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-blue-600 dark:text-cyan-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all cursor-pointer"
+                        >
+                          <CalendarCheck className="w-3.5 h-3.5" />
+                          <span>{t('nav.schedule', 'Agendar Reunión')}</span>
                         </button>
                         <button
                           onClick={() => {
@@ -870,9 +947,9 @@ export default function App() {
                 <div className="relative w-72 max-w-[85vw] bg-white dark:bg-[#091122] h-full shadow-2xl z-10 flex flex-col">
                   {/* Drawer Header */}
                   <div className="p-3.5 flex justify-between items-center border-b border-slate-200 dark:border-slate-800">
-                    <span className="font-black text-xs text-slate-800 dark:text-white uppercase tracking-wider">Menú de Navegación</span>
+                    <span className="font-black text-xs text-slate-800 dark:text-white uppercase tracking-wider">{t('header.menu', 'Menú de Navegación')}</span>
                     <button 
-                      onClick={() => setIsMobileSidebarOpen(false)}
+                      onClick={() => setIsMobileSidebarOpen(false)} 
                       className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
                       title="Cerrar menú"
                     >
@@ -894,7 +971,7 @@ export default function App() {
                           <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{currentUser.name}</p>
                           <p className="text-[10.5px] text-slate-400 dark:text-slate-500 truncate">{currentUser.email}</p>
                           <span className="inline-block mt-0.5 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-cyan-400">
-                            {role === 'admin' ? 'Administrador' : 'Empresa'}
+                            {role === 'admin' ? t('role.admin', 'Administrador') : t('role.user', 'Empresa')}
                           </span>
                         </div>
                       </div>
@@ -1009,16 +1086,26 @@ export default function App() {
 
         </div>
 
-        {/* Global Notifications & Settings Modals */}
+        {/* Interactive Notifications Modal */}
+        <NotificationsModal
+          isOpen={showNotificationModal}
+          onClose={() => setShowNotificationModal(false)}
+          notifications={notifications}
+          onMarkAllAsRead={handleMarkAllNotificationsAsRead}
+          onClearAll={handleClearNotifications}
+          onMarkAsRead={handleMarkNotificationAsRead}
+        />
+
+        {/* Schedule Meeting Modal with Direct luxproc.com Link */}
+        <ScheduleMeetingModal
+          isOpen={showScheduleMeetingModal}
+          onClose={() => setShowScheduleMeetingModal(false)}
+        />
+
+        {/* Global Settings Modal */}
         <HomeFeatureModals
-          type={
-            showNotificationModal ? 'notifications' :
-            showSettingsModal ? 'settings' : null
-          }
-          onClose={() => {
-            setShowNotificationModal(false);
-            setShowSettingsModal(false);
-          }}
+          type={showSettingsModal ? 'settings' : null}
+          onClose={() => setShowSettingsModal(false)}
           onStartSurvey={handleStartFresh}
           onRestartTour={() => {
             setView('home');

@@ -3,7 +3,7 @@ import { Cloud, Cpu, Settings, BarChart3, CloudLightning } from 'lucide-react';
 
 export default function IsometricTechCity() {
   return (
-    <div className="relative w-full max-w-[340px] h-[260px] flex items-center justify-center select-none pointer-events-none">
+    <div className="relative w-full max-w-[260px] sm:max-w-[320px] h-[180px] sm:h-[240px] flex items-center justify-center select-none pointer-events-none">
       {/* Background Soft Glow */}
       <div className="absolute inset-0 bg-cyan-400/20 rounded-full blur-2xl transform scale-75 animate-pulse" />
 

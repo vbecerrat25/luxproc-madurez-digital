@@ -28,6 +28,18 @@ if (typeof window !== 'undefined' && typeof Node === 'function' && Node.prototyp
     }
     return originalInsertBefore.call(this, newNode, referenceNode) as T;
   };
+
+  const originalReplaceChild = Node.prototype.replaceChild;
+  Node.prototype.replaceChild = function <T extends Node>(newChild: Node, oldChild: T): T {
+    if (oldChild.parentNode !== this) {
+      if (oldChild.parentNode) {
+        return oldChild.parentNode.replaceChild(newChild, oldChild) as T;
+      }
+      this.appendChild(newChild);
+      return oldChild;
+    }
+    return originalReplaceChild.call(this, newChild, oldChild) as T;
+  };
 }
 
 // Función para establecer el isotipo LUXPROC con fondo 100% transparente

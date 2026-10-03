@@ -8,6 +8,7 @@ import {
 import { DiagnosticRecord, ScoreMetrics, CompanyInfo } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
 import { calculateMacroAxes } from '../utils/macroAxes';
+import { REPORT_TRANSLATIONS } from '../i18n/reportTranslations';
 import RadarChart from './RadarChart';
 import MaturityDistributionChart from './MaturityDistributionChart';
 import SectorBenchmarkChart, { SECTOR_BENCHMARKS } from './SectorBenchmarkChart';
@@ -20,6 +21,7 @@ interface FullDocumentReportProps {
 
 export default function FullDocumentReport({ record, previousRecord, isPrint = true }: FullDocumentReportProps) {
   const { language } = useLanguage();
+  const tr = REPORT_TRANSLATIONS[language] || REPORT_TRANSLATIONS.es;
   const { companyInfo, metrics, id, date, time } = record;
 
   const hasPrevious = Boolean(previousRecord);
@@ -41,17 +43,30 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
     Comercio: { es: 'Comercio / Retail', en: 'Commerce / Retail', pt: 'Comércio / Varejo' },
     Servicios: { es: 'Servicios Profesionales', en: 'Professional Services', pt: 'Serviços Profissionais' },
     Manufactura: { es: 'Manufactura e Industria', en: 'Manufacturing & Industry', pt: 'Manufatura e Indústria' },
+    Tecnología: { es: 'Tecnología y Software', en: 'Technology & Software', pt: 'Tecnologia e Software' },
     Tecnologia: { es: 'Tecnología y Software', en: 'Technology & Software', pt: 'Tecnologia e Software' },
     Salud: { es: 'Salud y Farmacia', en: 'Healthcare & Medical', pt: 'Saúde e Farmácia' },
+    Educación: { es: 'Educación y Formación', en: 'Education & Training', pt: 'Educação e Treinamento' },
     Educacion: { es: 'Educación y Formación', en: 'Education & Training', pt: 'Educação e Treinamento' },
+    Construcción: { es: 'Construcción e Inmobiliaria', en: 'Construction & Real Estate', pt: 'Construção e Imobiliária' },
     Construccion: { es: 'Construcción e Inmobiliaria', en: 'Construction & Real Estate', pt: 'Construção e Imobiliária' },
+    Gastronomía: { es: 'Gastronomía y Hotelería', en: 'Gastronomy & Hospitality', pt: 'Gastronomia e Hotelaria' },
     Gastronomia: { es: 'Gastronomía y Hotelería', en: 'Gastronomy & Hospitality', pt: 'Gastronomia e Hotelaria' },
+    Logística: { es: 'Transporte y Logística', en: 'Logistics & Transport', pt: 'Transporte e Logística' },
     Logistica: { es: 'Transporte y Logística', en: 'Logistics & Transport', pt: 'Transporte e Logística' },
-    Agropecuario: { es: 'Agropecuario y Alimentos', en: 'Agriculture & Food', pt: 'Agropecuária e Alimentos' }
+    Agropecuario: { es: 'Agropecuario y Alimentos', en: 'Agriculture & Food', pt: 'Agropecuária e Alimentos' },
+    Otro: { es: 'General y Multisectorial', en: 'General / Multisector', pt: 'Geral e Multissetorial' }
   };
 
   const localizedSector = sectorNames[companyInfo.sector]?.[language] || companyInfo.sector;
-  const localizedSize = companyInfo.size;
+  
+  const sizeNames: Record<string, Record<string, string>> = {
+    Micro: { es: 'Microempresa (1-10)', en: 'Micro (1-10)', pt: 'Microempresa (1-10)' },
+    Pequeña: { es: 'Pequeña Empresa (11-50)', en: 'Small Business (11-50)', pt: 'Pequena Empresa (11-50)' },
+    Mediana: { es: 'Mediana Empresa (51-200)', en: 'Medium Enterprise (51-200)', pt: 'Média Empresa (51-200)' },
+    Grande: { es: 'Gran Corporación (200+)', en: 'Large Enterprise (200+)', pt: 'Grande Empresa (200+)' }
+  };
+  const localizedSize = sizeNames[companyInfo.size]?.[language] || companyInfo.size;
 
   // Level classification
   const getLevelInfo = (score: number) => {
@@ -131,177 +146,6 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
   const companyAverage = metrics.general;
   const overallDiff = companyAverage - sectorAverage;
 
-  // Complete catalog of 16 initiatives across all 4 quadrants
-  const all16Initiatives = [
-    // 1. Quick Wins (Impacto Alto, Esfuerzo Bajo)
-    {
-      id: 'qw-2fa',
-      title: 'Verificación en 2 Pasos (2FA) en Correos y WhatsApp',
-      axis: 'Tecnología, Datos y Ciberseguridad',
-      quadrant: 'Victoria Rápida',
-      impact: 'Alto',
-      effort: 'Bajo',
-      timeframe: '1 a 2 días',
-      desc: 'Blindar correos corporativos y WhatsApp Business contra accesos no autorizados sin costo de licencias.'
-    },
-    {
-      id: 'qw-whatsapp',
-      title: 'Estandarizar WhatsApp Business y Catálogo Digital',
-      axis: 'Clientes y Canales Comerciales',
-      quadrant: 'Victoria Rápida',
-      impact: 'Alto',
-      effort: 'Bajo',
-      timeframe: '3 a 5 días',
-      desc: 'Catálogo de productos con precios, respuestas rápidas y etiquetas por estado de cotización.'
-    },
-    {
-      id: 'qw-cloud-docs',
-      title: 'Centralizar Documentos Compartidos en la Nube',
-      axis: 'Operaciones, Procesos y Logística',
-      quadrant: 'Victoria Rápida',
-      impact: 'Alto',
-      effort: 'Bajo',
-      timeframe: '1 semana',
-      desc: 'Sustituir archivos dispersos en PCs individuales por carpetas en Google Drive o OneDrive con permisos por rol.'
-    },
-    {
-      id: 'qw-qr-payments',
-      title: 'Enlaces de Pago Digital y Códigos QR (Yape / Plin)',
-      axis: 'Clientes y Canales Comerciales',
-      quadrant: 'Victoria Rápida',
-      impact: 'Alto',
-      effort: 'Bajo',
-      timeframe: '3 a 7 días',
-      desc: 'Facilitar pagos inmediatos eliminando la fricción de transferencias manuales y validación de depósitos.'
-    },
-
-    // 2. Proyectos Estratégicos (Impacto Alto, Esfuerzo Medio/Alto)
-    {
-      id: 'st-erp',
-      title: 'Sistema de Gestión (ERP) y Facturación SUNAT',
-      axis: 'Operaciones, Procesos y Logística',
-      quadrant: 'Proyecto Estratégico',
-      impact: 'Alto',
-      effort: 'Medio',
-      timeframe: '1 a 3 meses',
-      desc: 'Integrar ventas, compras, cobranzas, stock en tiempo real y facturación electrónica en una sola plataforma.'
-    },
-    {
-      id: 'st-crm',
-      title: 'Embudo Comercial (CRM) y Gestión de Clientes',
-      axis: 'Clientes y Canales Comerciales',
-      quadrant: 'Proyecto Estratégico',
-      impact: 'Alto',
-      effort: 'Medio',
-      timeframe: '2 a 3 meses',
-      desc: 'Registrar oportunidades, cotizaciones y fechas de seguimiento para evitar prospectos desatendidos.'
-    },
-    {
-      id: 'st-workflow',
-      title: 'Automatización de Flujos entre Áreas (APIs)',
-      axis: 'Tecnología, Datos y Ciberseguridad',
-      quadrant: 'Proyecto Estratégico',
-      impact: 'Alto',
-      effort: 'Medio',
-      timeframe: '1 a 2 meses',
-      desc: 'Conectar pedidos con facturación y despacho automáticamente vía Make/Zapier, eliminando doble digitación.'
-    },
-    {
-      id: 'st-data-governance',
-      title: 'Plan de Gobernanza de Datos y Copias de Seguridad',
-      axis: 'Tecnología, Datos y Ciberseguridad',
-      quadrant: 'Proyecto Estratégico',
-      impact: 'Alto',
-      effort: 'Medio',
-      timeframe: '2 a 4 meses',
-      desc: 'Políticas de seguridad, respaldos automáticos diarios externos en la nube y plan de contingencia operativa.'
-    },
-
-    // 3. Mejoras Operativas (Impacto Medio, Esfuerzo Bajo)
-    {
-      id: 'op-checklists',
-      title: 'Formularios Móviles para Operaciones (AppSheet)',
-      axis: 'Operaciones, Procesos y Logística',
-      quadrant: 'Mejora Operativa',
-      impact: 'Medio',
-      effort: 'Bajo',
-      timeframe: '1 a 2 semanas',
-      desc: 'Sustituir hojas impresas de recepción u órdenes de trabajo por formularios digitales en el móvil.'
-    },
-    {
-      id: 'op-passwords',
-      title: 'Gestor de Contraseñas del Equipo (Bitwarden)',
-      axis: 'Tecnología, Datos y Ciberseguridad',
-      quadrant: 'Mejora Operativa',
-      impact: 'Medio',
-      effort: 'Bajo',
-      timeframe: '1 semana',
-      desc: 'Eliminar contraseñas en post-its o WhatsApp. Gestor corporativo cifrado con accesos departamentales.'
-    },
-    {
-      id: 'op-stock',
-      title: 'Control de Stock con Alertas de Reorden Mínimo',
-      axis: 'Operaciones, Procesos y Logística',
-      quadrant: 'Mejora Operativa',
-      impact: 'Medio',
-      effort: 'Bajo',
-      timeframe: '2 a 3 semanas',
-      desc: 'Estandarizar códigos de producto (SKU) con avisos automáticos para evitar quiebres de mercadería.'
-    },
-    {
-      id: 'op-circularity',
-      title: 'Protocolo Cero Papel y Reducción de Mermas',
-      axis: 'Estrategia, Liderazgo y Sostenibilidad',
-      quadrant: 'Mejora Operativa',
-      impact: 'Medio',
-      effort: 'Bajo',
-      timeframe: '2 a 4 semanas',
-      desc: 'Reemplazar firmas en papel por aprobaciones digitales y establecer indicadores de reducción de consumibles.'
-    },
-
-    // 4. Iniciativas Futuras y de Escala (Impacto Alto, Esfuerzo Alto)
-    {
-      id: 'fu-ai',
-      title: 'Asistente de IA para Atención y Cotizaciones 24/7',
-      axis: 'Tecnología, Datos y Ciberseguridad',
-      quadrant: 'Iniciativa Futura / IA',
-      impact: 'Alto',
-      effort: 'Alto',
-      timeframe: '4 a 8 meses',
-      desc: 'Agente conversacional entrenado con su catálogo y lista de precios para responder consultas al instante.'
-    },
-    {
-      id: 'fu-bi',
-      title: 'Tablero de Control Automatizado (BI) en Tiempo Real',
-      axis: 'Estrategia, Liderazgo y Sostenibilidad',
-      quadrant: 'Iniciativa Futura / IA',
-      impact: 'Alto',
-      effort: 'Medio',
-      timeframe: '3 a 6 meses',
-      desc: 'Conectar ventas, cobranzas y margen en Looker Studio o Power BI sin informes manuales en hojas de cálculo.'
-    },
-    {
-      id: 'fu-ecommerce',
-      title: 'Portal de Pedidos Online y Autoservicio para Clientes',
-      axis: 'Clientes y Canales Comerciales',
-      quadrant: 'Iniciativa Futura / IA',
-      impact: 'Alto',
-      effort: 'Alto',
-      timeframe: '6 a 10 meses',
-      desc: 'Portal B2B/B2C con disponibilidad de stock en tiempo real y generación autónoma de órdenes de compra.'
-    },
-    {
-      id: 'fu-talent',
-      title: 'Programa Continuo de Capacitación Digital y Productividad',
-      axis: 'Personas, Talento y Habilidades Digitales',
-      quadrant: 'Iniciativa Futura / IA',
-      impact: 'Alto',
-      effort: 'Medio',
-      timeframe: 'Continuo',
-      desc: 'Talleres prácticos mensuales en herramientas digitales, automatizaciones básicas y uso productivo de IA.'
-    }
-  ];
-
   return (
     <div className="full-document-report w-full bg-white text-slate-900 print:text-black font-sans">
       
@@ -329,23 +173,23 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
         <div className="space-y-7 my-auto text-center py-6">
           <div className="inline-block px-4 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-xs font-extrabold text-blue-700 tracking-widest uppercase">
             {hasPrevious 
-              ? `Auditoría y Seguimiento Evolutivo — Re-evaluación (${daysElapsed}+ Días)`
-              : 'Auditoría y Plan Estratégico de Transformación Digital'}
+              ? tr.evolutionSubhead(daysElapsed)
+              : tr.auditSubhead}
           </div>
           
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900 uppercase leading-tight">
-            Informe Oficial de Madurez Digital
+            {tr.officialTitle}
           </h1>
           
           <p className="text-sm text-slate-600 max-w-2xl mx-auto leading-relaxed">
             {hasPrevious
-              ? `Informe comparativo de evolución tecnológica y salto de capacidades frente a la línea base del ${previousRecord?.date}.`
-              : 'Evaluación integral de capacidades tecnológicas, procesos operativos, canales comerciales y hoja de ruta de modernización.'}
+              ? tr.coverDescEvolution(previousRecord?.date || '')
+              : tr.coverDescStandard}
           </p>
 
           <div className="pt-2 flex flex-col items-center justify-center">
             <div className="p-6 rounded-3xl bg-slate-50 border-2 border-slate-300 shadow-sm flex flex-col items-center min-w-[280px]">
-              <span className="text-xs font-black uppercase tracking-widest text-slate-500">Índice General de Madurez</span>
+              <span className="text-xs font-black uppercase tracking-widest text-slate-500">{tr.generalIndex}</span>
               <div className="text-6xl font-black font-mono text-slate-900 my-2">
                 {metrics.general}%
               </div>
@@ -354,12 +198,12 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
               </span>
               {hasPrevious && previousRecord && (
                 <div className="mt-3 pt-2.5 border-t border-slate-200 text-xs font-bold text-slate-700 flex items-center justify-center gap-2">
-                  <span className="text-slate-500 text-[11px]">Línea Base: <strong>{previousRecord.metrics.general}%</strong></span>
+                  <span className="text-slate-500 text-[11px]">{tr.baseline}: <strong>{previousRecord.metrics.general}%</strong></span>
                   <span className="text-slate-400">➔</span>
                   <span className={`text-[11px] font-black px-2 py-0.5 rounded ${
                     globalDelta >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
                   }`}>
-                    {globalDelta >= 0 ? `+${globalDelta}% Evolución` : `${globalDelta}%`}
+                    {tr.evolutionText(globalDelta)}
                   </span>
                 </div>
               )}
@@ -374,32 +218,32 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
         <div className="border-t-2 border-slate-900 pt-6 text-xs text-slate-700">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-3 gap-x-6">
             <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase block">Empresa Evaluada</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase block">{tr.evaluatedCompany}</span>
               <strong className="text-slate-900 text-sm">{companyInfo.name}</strong>
             </div>
             <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase block">Sector Económico</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase block">{tr.economicSector}</span>
               <strong className="text-slate-900 text-sm">{localizedSector}</strong>
             </div>
             <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase block">Tamaño Corporativo</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase block">{tr.corporateSize}</span>
               <strong className="text-slate-900 text-sm">{localizedSize}</strong>
             </div>
             <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase block">Código de Auditoría</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase block">{tr.auditCode}</span>
               <span className="font-mono font-bold text-slate-900">{id}</span>
             </div>
             <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase block">Fecha y Hora de Emisión</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase block">{tr.issueDateTime}</span>
               <span className="text-slate-900 font-medium">{date} {time}</span>
             </div>
             <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase block">Contacto de Enlace</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase block">{tr.contactEmail}</span>
               <span className="text-slate-900 font-medium">{companyInfo.contactEmail}</span>
             </div>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-200 text-[10px] text-slate-400 text-center">
-            Documento técnico certificado emitido por LUXPROC INNOVACIÓN Y TECNOLOGÍA S.A.C. con validez para planificación de inversiones y modernización de procesos.
+            {tr.legalFooter}
           </div>
         </div>
       </div>
@@ -413,44 +257,44 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
       >
         <div className="space-y-6">
           <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">LUXPROC INNOVACIÓN Y TECNOLOGÍA S.A.C. — INFORME DE MADUREZ DIGITAL</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{tr.pageHeader}</span>
             <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">{companyInfo.name}</span>
           </div>
 
           <div>
             <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight border-b-2 border-slate-900 pb-2">
-              1. Resumen Ejecutivo y Diagnóstico Situacional
+              {tr.sec1Title}
             </h2>
             <p className="text-xs text-slate-700 leading-relaxed mt-3">
-              El presente informe técnico consolida los resultados recabados a través del diagnóstico oficial de Madurez Digital de <strong>LUXPROC INNOVACIÓN Y TECNOLOGÍA S.A.C.</strong> para la empresa <strong>{companyInfo.name}</strong>. El propósito fundamental de esta auditoría es evaluar el grado de digitalización de los procesos clave, la consistencia de los sistemas integrados de información, la protección de activos críticos y la capacidad del equipo para adoptar herramientas digitales modernas.
+              {tr.sec1Desc1(companyInfo.name)}
             </p>
             <p className="text-xs text-slate-700 leading-relaxed mt-2">
-              Con un resultado global de <strong>{metrics.general}%</strong>, la organización se posiciona en un nivel de madurez digital clasificado como <strong>{levelInfo.title}</strong>. {levelInfo.description}
+              {tr.sec1Desc2(metrics.general, levelInfo.title, levelInfo.description)}
             </p>
           </div>
 
           <div className="pt-1">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider border-b border-slate-300 pb-1.5 flex items-center justify-between">
-              <span>2. Matriz de las 8 Dimensiones Operativas Evaluadas</span>
-              <span className="text-[11px] font-normal text-slate-500 lowercase">escala de 0% a 100%</span>
+              <span>{tr.sec2Title}</span>
+              <span className="text-[11px] font-normal text-slate-500 lowercase">{tr.scaleNote}</span>
             </h3>
 
             <table className="w-full text-left text-xs border-collapse border border-slate-300 mt-3">
               <thead>
                 <tr className="bg-slate-100 text-slate-900">
-                  <th className="p-2 border border-slate-300 font-bold">Dimensión de Análisis</th>
+                  <th className="p-2 border border-slate-300 font-bold">{tr.colDimension}</th>
                   {hasPrevious && previousRecord ? (
                     <>
-                      <th className="p-2 border border-slate-300 font-bold text-center w-24">Línea Base</th>
-                      <th className="p-2 border border-slate-300 font-bold text-center w-24">Actual</th>
-                      <th className="p-2 border border-slate-300 font-bold text-center w-24">Variación</th>
-                      <th className="p-2 border border-slate-300 font-bold">Estado Evolutivo</th>
+                      <th className="p-2 border border-slate-300 font-bold text-center w-24">{tr.colBaseline}</th>
+                      <th className="p-2 border border-slate-300 font-bold text-center w-24">{tr.colCurrent}</th>
+                      <th className="p-2 border border-slate-300 font-bold text-center w-24">{tr.colDelta}</th>
+                      <th className="p-2 border border-slate-300 font-bold">{tr.colEvolutionStatus}</th>
                     </>
                   ) : (
                     <>
-                      <th className="p-2.5 border border-slate-300 font-bold text-center w-24">Puntaje</th>
-                      <th className="p-2.5 border border-slate-300 font-bold">Evaluación Cualitativa</th>
-                      <th className="p-2.5 border border-slate-300 font-bold text-center w-28">Brecha a Meta</th>
+                      <th className="p-2.5 border border-slate-300 font-bold text-center w-24">{tr.colScore}</th>
+                      <th className="p-2.5 border border-slate-300 font-bold">{tr.colQualitative}</th>
+                      <th className="p-2.5 border border-slate-300 font-bold text-center w-28">{tr.colGap}</th>
                     </>
                   )}
                 </tr>
@@ -487,12 +331,12 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
                           </td>
                           <td className="p-2 border border-slate-300 text-slate-700 font-medium text-[11px]">
                             {(delta || 0) >= 15 
-                              ? '🚀 Salto de Madurez' 
+                              ? tr.leapMaturity
                               : (delta || 0) > 0 
-                              ? '✅ Mejora Progresiva' 
+                              ? tr.progressiveImprovement
                               : (delta || 0) === 0 
-                              ? '⚖️ Consolidado' 
-                              : '⚠️ Requiere Refuerzo'}
+                              ? tr.consolidated
+                              : tr.requiresReinforcement}
                           </td>
                         </>
                       ) : (
@@ -517,16 +361,16 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
 
           <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-200 text-xs text-blue-950 space-y-2">
             <strong className="block text-xs uppercase tracking-wider font-extrabold text-blue-900">
-              Interpretación Estratégica del Diagnóstico
+              {tr.strategicInterpretationTitle}
             </strong>
             <p className="leading-relaxed text-[11px]">
-              Las dimensiones con mayor puntaje constituyen los pilares que garantizan la estabilidad operativa inmediata de la empresa. Por el contrario, aquellas dimensiones con puntajes por debajo del 60% representan áreas donde persisten registros manuales en papel, información dispersa o procesos dependientes de personas específicas, limitando la escalabilidad comercial y aumentando los costos ocultos por reprocesos.
+              {tr.strategicInterpretationDesc}
             </p>
           </div>
         </div>
 
         <div className="pt-4 text-center text-[10px] text-slate-500 border-t border-slate-200">
-          Página 2 de 6 — LUXPROC INNOVACIÓN Y TECNOLOGÍA S.A.C.
+          {tr.pageNumber(2, 6)}
         </div>
       </div>
 
@@ -539,16 +383,16 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
       >
         <div className="space-y-4">
           <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">LUXPROC INNOVACIÓN Y TECNOLOGÍA S.A.C. — INFORME DE MADUREZ DIGITAL</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{tr.pageHeader}</span>
             <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">{companyInfo.name}</span>
           </div>
 
           <div>
             <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight border-b-2 border-slate-900 pb-2">
-              3. Los 5 Macro-Ejes Estratégicos de Madurez Digital
+              {tr.sec3Title}
             </h2>
             <p className="text-xs text-slate-700 leading-relaxed mt-2.5">
-              Para facilitar la toma de decisiones a nivel de gerencia y directorio, las 8 dimensiones operativas se integran en los <strong>5 Macro-Ejes Estratégicos</strong> de transformación empresarial. A continuación se presenta el diagnóstico específico de cada eje para <strong>{companyInfo.name}</strong>:
+              {tr.sec3Desc(companyInfo.name)}
             </p>
           </div>
 
@@ -601,11 +445,11 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[10.5px] pt-1">
                     <div>
-                      <span className="text-[9.5px] font-bold text-slate-500 uppercase block">Diagnóstico del Eje:</span>
+                      <span className="text-[9.5px] font-bold text-slate-500 uppercase block">{tr.axisDiagnosis}</span>
                       <p className="text-slate-700 leading-snug">{axis.diagnosis}</p>
                     </div>
                     <div>
-                      <span className="text-[9.5px] font-bold text-blue-700 uppercase block">Foco Prioritario de Acción:</span>
+                      <span className="text-[9.5px] font-bold text-blue-700 uppercase block">{tr.priorityFocus}</span>
                       <p className="text-slate-900 font-medium leading-snug">{axis.priorityFocus}</p>
                     </div>
                   </div>
@@ -616,7 +460,7 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
         </div>
 
         <div className="pt-4 text-center text-[10px] text-slate-500 border-t border-slate-200">
-          Página 3 de 6 — LUXPROC INNOVACIÓN Y TECNOLOGÍA S.A.C.
+          {tr.pageNumber(3, 6)}
         </div>
       </div>
 
@@ -629,16 +473,16 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
       >
         <div className="space-y-4">
           <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">LUXPROC INNOVACIÓN Y TECNOLOGÍA S.A.C. — INFORME DE MADUREZ DIGITAL</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{tr.pageHeader}</span>
             <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">{companyInfo.name}</span>
           </div>
 
           <div>
             <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight border-b-2 border-slate-900 pb-2">
-              4. Diagnóstico Gráfico de Madurez Tecnológica
+              {tr.sec4Title}
             </h2>
             <p className="text-xs text-slate-700 leading-relaxed mt-2">
-              Los siguientes diagramas detallan la simetría tecnológica entre las capacidades evaluadas y la distribución de madurez en la organización:
+              {tr.sec4Desc}
             </p>
           </div>
 
@@ -646,21 +490,21 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
           <div className="grid grid-cols-2 gap-4 items-stretch pt-1">
             <div className="border border-slate-200 p-3 rounded-2xl bg-slate-50/50 flex flex-col items-center justify-center">
               <h4 className="text-[11px] font-bold text-slate-900 mb-2 uppercase tracking-wider text-center">
-                A) Radar de Simetría Tecnológica
+                {tr.radarTitle}
               </h4>
               <div className="w-full flex items-center justify-center">
                 <RadarChart 
                   metrics={metrics} 
                   previousMetrics={previousRecord?.metrics}
-                  previousLabel={previousRecord ? `Línea Base (${previousRecord.date})` : undefined}
-                  currentLabel={`Actual (${date})`}
+                  previousLabel={previousRecord ? `${tr.baseline} (${previousRecord.date})` : undefined}
+                  currentLabel={`${tr.colCurrent} (${date})`}
                   isPrint={true} 
                 />
               </div>
             </div>
             <div className="border border-slate-200 p-4 rounded-2xl bg-slate-50/50 flex flex-col justify-center">
               <h4 className="text-[11px] font-bold text-slate-900 mb-3 uppercase tracking-wider text-center">
-                B) Distribución por Niveles de Madurez
+                {tr.distributionTitle}
               </h4>
               <div className="w-full">
                 <MaturityDistributionChart metrics={metrics} isPrint={true} compact={true} />
@@ -671,23 +515,23 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
           {/* Graphical Analysis & Findings */}
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-3">
             <strong className="text-xs uppercase tracking-wider font-extrabold text-slate-900 block border-b border-slate-200 pb-1.5">
-              Análisis e Interpretación del Perfil Tecnológico
+              {tr.techProfileAnalysisTitle}
             </strong>
             <div className="grid grid-cols-2 gap-3 text-[11px]">
               <div className="space-y-1">
                 <strong className="text-blue-900 block font-bold">
-                  {hasPrevious ? 'Expansión de Simetría Tecnológica:' : 'Equilibrio y Simetría Operativa:'}
+                  {hasPrevious ? tr.symmetryTitleEvolution : tr.symmetryTitleStandard}
                 </strong>
                 <p className="text-slate-700 leading-relaxed">
                   {hasPrevious && previousRecord
-                    ? `La superposición gráfica evidencia la expansión del perímetro operativo frente a la evaluación del ${previousRecord.date}. La ampliación hacia los vértices más rezagados confirma que las iniciativas ejecutadas en estos ${daysElapsed} días redujeron la dispersión entre departamentos.`
-                    : 'El radar refleja el balance entre las áreas de la empresa. Una alta dispersión indica departamentos que han avanzado digitalmente de forma aislada, creando asimetrías donde el área comercial genera prospectos que la logística interna o los controles manuales demoran en procesar.'}
+                    ? tr.symmetryDescEvolution(previousRecord.date, daysElapsed)
+                    : tr.symmetryDescStandard}
                 </p>
               </div>
               <div className="space-y-1">
-                <strong className="text-blue-900 block font-bold">Transición del Ecosistema:</strong>
+                <strong className="text-blue-900 block font-bold">{tr.ecosystemTransitionTitle}</strong>
                 <p className="text-slate-700 leading-relaxed">
-                  La concentración de dimensiones en niveles básicos o formativos subraya la necesidad de estandarizar procesos repetitivos antes de adoptar herramientas complejas, asegurando que la inversión tecnológica produzca aumentos inmediatos en rentabilidad y orden interno.
+                  {tr.ecosystemTransitionDesc}
                 </p>
               </div>
             </div>
@@ -695,7 +539,7 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
         </div>
 
         <div className="pt-4 text-center text-[10px] text-slate-500 border-t border-slate-200">
-          Página 4 de 6 — LUXPROC INNOVACIÓN Y TECNOLOGÍA S.A.C.
+          {tr.pageNumber(4, 6)}
         </div>
       </div>
 
@@ -708,16 +552,16 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
       >
         <div className="space-y-4">
           <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">LUXPROC INNOVACIÓN Y TECNOLOGÍA S.A.C. — INFORME DE MADUREZ DIGITAL</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{tr.pageHeader}</span>
             <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">{companyInfo.name}</span>
           </div>
 
           <div>
             <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight border-b-2 border-slate-900 pb-2">
-              5. Comparativa de Benchmark Sectorial vs. {localizedSector}
+              {tr.sec5Title(localizedSector)}
             </h2>
             <p className="text-xs text-slate-700 leading-relaxed mt-2">
-              Evaluación comparativa del desempeño de <strong>{companyInfo.name}</strong> frente al promedio sectorial de empresas en el rubro de <strong>{localizedSector}</strong>:
+              {tr.sec5Desc(companyInfo.name, localizedSector)}
             </p>
           </div>
 
@@ -725,10 +569,10 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
           <div className="border border-slate-200 p-4 rounded-2xl bg-slate-50/50 space-y-2">
             <div className="flex justify-between items-center">
               <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                Desempeño Comparado por Dimensión
+                {tr.compDimTitle}
               </h4>
               <span className="text-[10px] font-mono font-bold text-slate-700 bg-white px-2.5 py-1 rounded-full border border-slate-200">
-                Promedio Sector: {sectorAverage}% | {companyInfo.name}: {companyAverage}% ({overallDiff >= 0 ? `+${overallDiff}%` : `${overallDiff}%`})
+                {tr.sectorAvgLabel(sectorAverage, companyInfo.name, companyAverage, overallDiff)}
               </span>
             </div>
             <div className="w-full overflow-hidden">
@@ -743,30 +587,30 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block" />
                   <strong className="text-xs uppercase tracking-wider font-extrabold text-blue-950">
-                    Certificación de Evolución Temporal (Re-evaluación a {daysElapsed}+ Días)
+                    {tr.evolutionCertTitle(daysElapsed)}
                   </strong>
                 </div>
                 <span className="text-[11px] font-mono font-black text-blue-900 bg-white px-2.5 py-0.5 rounded-full border border-blue-300">
-                  Línea Base: {previousRecord.date} ({previousRecord.metrics.general}%) ➔ Actual: {date} ({metrics.general}%)
+                  {tr.evolutionCertSub(previousRecord.date, previousRecord.metrics.general, date, metrics.general)}
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-3 text-[11px]">
                 <div className="p-2.5 rounded-xl bg-white border border-blue-100 space-y-1">
-                  <span className="text-[10px] font-bold text-emerald-800 uppercase block">1. Rendimiento Global</span>
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase block">{tr.globalPerfTitle}</span>
                   <p className="text-slate-700 leading-snug">
-                    Incremento neto de <strong>+{globalDelta}%</strong> en madurez digital. La empresa ascendió de nivel <strong>{prevLevelInfo?.title || 'Inicial'}</strong> a <strong>{levelInfo.title}</strong>.
+                    {tr.globalPerfDesc(globalDelta, prevLevelInfo?.title || 'Inicial', levelInfo.title)}
                   </p>
                 </div>
                 <div className="p-2.5 rounded-xl bg-white border border-blue-100 space-y-1">
-                  <span className="text-[10px] font-bold text-blue-800 uppercase block">2. Mayor Salto Cualitativo</span>
+                  <span className="text-[10px] font-bold text-blue-800 uppercase block">{tr.topLeapTitle}</span>
                   <p className="text-slate-700 leading-snug">
-                    Las áreas de mayor aceleración registraron aumentos de hasta +{Math.max(...dimensionsScores.map(d => d.score - (previousRecord.metrics[d.key as keyof typeof previousRecord.metrics] || 0)))}%, confirmando asimilación efectiva de herramientas.
+                    {tr.topLeapDesc(Math.max(...dimensionsScores.map(d => d.score - (previousRecord.metrics[d.key as keyof typeof previousRecord.metrics] || 0))))}
                   </p>
                 </div>
                 <div className="p-2.5 rounded-xl bg-white border border-blue-100 space-y-1">
-                  <span className="text-[10px] font-bold text-purple-800 uppercase block">3. Dictamen de Auditoría</span>
+                  <span className="text-[10px] font-bold text-purple-800 uppercase block">{tr.auditOpinionTitle}</span>
                   <p className="text-slate-700 leading-snug">
-                    Velocidad de transformación calificada como <strong>Favorable</strong>. Se recomienda mantener el ciclo de re-evaluación periódica para consolidar procesos.
+                    {tr.auditOpinionDesc}
                   </p>
                 </div>
               </div>
@@ -776,28 +620,28 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
               <div className="grid grid-cols-3 gap-3 text-xs">
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
                   <strong className="text-[11px] uppercase tracking-wider font-bold text-emerald-800 block">
-                    1. Ventajas Competitivas
+                    {tr.compAdvantagesTitle}
                   </strong>
                   <p className="text-[10.5px] text-slate-700 leading-snug">
-                    Capacidades donde la empresa iguala o supera al sector, funcionando como ventajas diferenciadoras frente a competidores directos.
+                    {tr.compAdvantagesDesc}
                   </p>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
                   <strong className="text-[11px] uppercase tracking-wider font-bold text-amber-800 block">
-                    2. Brechas Prioritarias
+                    {tr.priorityGapsTitle}
                   </strong>
                   <p className="text-[10.5px] text-slate-700 leading-snug">
-                    Procesos que registran desventaja frente al promedio y requieren modernización para evitar pérdida de cuota de mercado.
+                    {tr.priorityGapsDesc}
                   </p>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
                   <strong className="text-[11px] uppercase tracking-wider font-bold text-blue-800 block">
-                    3. Directriz Estratégica
+                    {tr.strategicGuidelineTitle}
                   </strong>
                   <p className="text-[10.5px] text-slate-700 leading-snug">
                     {overallDiff >= 0
-                      ? `Consolidar la automatización entre departamentos para blindar la delantera competitiva en ${localizedSector}.`
-                      : `Acelerar la integración de sistemas y canales digitales para cerrar la brecha de ${Math.abs(overallDiff)}% con el sector.`}
+                      ? tr.strategicGuidelinePositive(localizedSector)
+                      : tr.strategicGuidelineNegative(Math.abs(overallDiff))}
                   </p>
                 </div>
               </div>
@@ -805,7 +649,7 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
               {/* Follow-up Protocol Note */}
               <div className="p-2.5 rounded-xl bg-blue-50/60 border border-blue-200 text-[10.5px] text-blue-900 flex items-center justify-between gap-3">
                 <span className="font-bold">
-                  ℹ️ Protocolo de Seguimiento Temporal: Al realizar tu segundo diagnóstico (a partir de los 15 a 30 días), este informe activará automáticamente el Certificado de Evolución y la comparativa de avance.
+                  {tr.followUpProtocol}
                 </span>
               </div>
             </div>
@@ -813,7 +657,7 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
         </div>
 
         <div className="pt-4 text-center text-[10px] text-slate-500 border-t border-slate-200">
-          Página 5 de 6 — LUXPROC INNOVACIÓN Y TECNOLOGÍA S.A.C.
+          {tr.pageNumber(5, 6)}
         </div>
       </div>
 
@@ -826,36 +670,36 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
       >
         <div className="space-y-3.5">
           <div className="flex justify-between items-center border-b border-slate-200 pb-2.5">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">LUXPROC INNOVACIÓN Y TECNOLOGÍA S.A.C. — INFORME DE MADUREZ DIGITAL</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{tr.pageHeader}</span>
             <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">{companyInfo.name}</span>
           </div>
 
           <div>
             <div className="flex items-center justify-between">
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight border-b-2 border-slate-900 pb-1">
-                6. Matriz de Priorización y Plan de Acción (16 Iniciativas)
+                {tr.sec6Title}
               </h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
-                Portafolio Integral Completo
+                {tr.portfolioTag}
               </span>
             </div>
             <p className="text-[11px] text-slate-600 leading-snug mt-1">
-              Catálogo completo de las 16 iniciativas de modernización organizadas en los 4 cuadrantes de ejecución estratégica:
+              {tr.sec6Desc}
             </p>
           </div>
 
           {/* 16 Initiatives in Compact High-Legibility Grid */}
           <div className="grid grid-cols-2 gap-2 text-xs">
-            {all16Initiatives.map((item, idx) => {
+            {tr.initiatives.map((item, idx) => {
               let qClass = 'border-l-4 border-l-emerald-500 bg-emerald-50/15';
               let qBadge = 'bg-emerald-100 text-emerald-800';
-              if (item.quadrant.includes('Estratégico')) {
+              if (item.quadrant.includes('Estratégic') || item.quadrant.includes('Strategic')) {
                 qClass = 'border-l-4 border-l-blue-500 bg-blue-50/15';
                 qBadge = 'bg-blue-100 text-blue-800';
-              } else if (item.quadrant.includes('Operativa')) {
+              } else if (item.quadrant.includes('Operativ') || item.quadrant.includes('Operational')) {
                 qClass = 'border-l-4 border-l-amber-500 bg-amber-50/15';
                 qBadge = 'bg-amber-100 text-amber-800';
-              } else if (item.quadrant.includes('Futura')) {
+              } else if (item.quadrant.includes('Futur') || item.quadrant.includes('IA') || item.quadrant.includes('AI')) {
                 qClass = 'border-l-4 border-l-purple-500 bg-purple-50/15';
                 qBadge = 'bg-purple-100 text-purple-800';
               }
@@ -880,8 +724,8 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
                     {item.desc}
                   </p>
                   <div className="text-[8.5px] text-slate-500 pt-0.5 flex justify-between border-t border-slate-200/50">
-                    <span>Eje: <strong>{item.axis}</strong></span>
-                    <span>Impacto: <strong>{item.impact}</strong></span>
+                    <span>{language === 'en' ? 'Axis:' : language === 'pt' ? 'Eixo:' : 'Eje:'} <strong>{item.axis}</strong></span>
+                    <span>{language === 'en' ? 'Impact:' : language === 'pt' ? 'Impacto:' : 'Impacto:'} <strong>{item.impact}</strong></span>
                   </div>
                 </div>
               );
@@ -891,16 +735,16 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
           {/* Implementation Roadmap in 3 Phases */}
           <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-3 gap-2.5 text-[9.5px]">
             <div>
-              <strong className="text-slate-900 uppercase block font-black">Fase 1: Victorias Rápidas (Mes 1)</strong>
-              <p className="text-slate-600 leading-tight">2FA, WhatsApp Business, plantillas en la nube y cobros QR (Yape/Plin).</p>
+              <strong className="text-slate-900 uppercase block font-black">{tr.phase1Title}</strong>
+              <p className="text-slate-600 leading-tight">{tr.phase1Desc}</p>
             </div>
             <div>
-              <strong className="text-slate-900 uppercase block font-black">Fase 2: Integración (Mes 2-4)</strong>
-              <p className="text-slate-600 leading-tight">Sistema ERP, facturación SUNAT, embudo CRM y checklists móviles.</p>
+              <strong className="text-slate-900 uppercase block font-black">{tr.phase2Title}</strong>
+              <p className="text-slate-600 leading-tight">{tr.phase2Desc}</p>
             </div>
             <div>
-              <strong className="text-slate-900 uppercase block font-black">Fase 3: Escala & IA (Mes 5+)</strong>
-              <p className="text-slate-600 leading-tight">Asistentes de IA, tableros de BI en tiempo real y portal de clientes.</p>
+              <strong className="text-slate-900 uppercase block font-black">{tr.phase3Title}</strong>
+              <p className="text-slate-600 leading-tight">{tr.phase3Desc}</p>
             </div>
           </div>
 
@@ -909,28 +753,28 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
             <div className="grid grid-cols-2 gap-8 text-center text-xs">
               <div className="space-y-0.5">
                 <div className="h-7 flex items-end justify-center">
-                  <span className="font-serif italic text-slate-800 text-xs">Equipo Consultor Especializado</span>
+                  <span className="font-serif italic text-slate-800 text-xs">{tr.consultingTeam}</span>
                 </div>
                 <div className="border-t border-slate-400 w-44 mx-auto pt-1 font-bold text-slate-900 text-[11px]">
                   LUXPROC INNOVACIÓN Y TECNOLOGÍA S.A.C.
                 </div>
-                <span className="text-[9.5px] text-slate-500 block">Emisión y Validación Técnica</span>
+                <span className="text-[9.5px] text-slate-500 block">{tr.validationTitle}</span>
               </div>
               <div className="space-y-0.5">
                 <div className="h-7 flex items-end justify-center">
                   <span className="font-mono text-slate-800 text-[11px] font-bold">{companyInfo.name}</span>
                 </div>
                 <div className="border-t border-slate-400 w-44 mx-auto pt-1 font-bold text-slate-900 text-[11px]">
-                  Dirección / Gerencia General
+                  {tr.managementTeam}
                 </div>
-                <span className="text-[9.5px] text-slate-500 block">Recepción y Conformidad del Plan</span>
+                <span className="text-[9.5px] text-slate-500 block">{tr.acceptanceTitle}</span>
               </div>
             </div>
           </div>
         </div>
 
         <div className="pt-2.5 text-center text-[10px] text-slate-500 border-t border-slate-200">
-          Página 6 de 6 — LUXPROC INNOVACIÓN Y TECNOLOGÍA S.A.C. © {new Date().getFullYear()} — Documento técnico de validez empresarial.
+          {tr.finalLegalNote(new Date().getFullYear())}
         </div>
       </div>
 

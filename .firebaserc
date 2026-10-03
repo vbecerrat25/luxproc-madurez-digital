@@ -5,8 +5,8 @@
   "targets": {
     "luxproc": {
       "hosting": {
-        "sitio-diags": [
-          "luxproc-diags"
+        "sitio-madurez": [
+          "luxproc"
         ]
       }
     }

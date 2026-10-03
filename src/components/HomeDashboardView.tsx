@@ -105,11 +105,11 @@ export default function HomeDashboardView({
           <div className="flex items-center justify-between gap-4 relative z-10">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-950/70 border border-cyan-400/30 text-cyan-300 text-[10px] font-black tracking-wider uppercase shadow-xs">
               <BarChart3 className="w-3 h-3 text-cyan-400" />
-              <span>EVALUACIÓN AVANZADA 2026</span>
+              <span>{t('home.badge', 'EVALUACIÓN AVANZADA 2026')}</span>
             </div>
 
-            <p className="hidden sm:block text-[11px] text-cyan-200/85 italic font-medium max-w-[200px] text-right leading-tight">
-              "La digitalización no es un destino, es un proceso."
+            <p className="hidden sm:block text-[11px] text-cyan-200/85 italic font-medium max-w-[220px] text-right leading-tight">
+              {t('home.quote', '"La digitalización no es un destino, es un proceso."')}
             </p>
           </div>
 
@@ -119,12 +119,11 @@ export default function HomeDashboardView({
             {/* Left Texts & CTA */}
             <div className="md:col-span-7 space-y-3">
               <h1 className="text-2xl sm:text-3xl xl:text-3.5xl font-black tracking-tight leading-tight">
-                Diagnóstico de Madurez{' '}
-                <span className="text-cyan-300 block sm:inline">Digital Empresarial</span>
+                {t('home.title', 'Diagnóstico de Madurez Digital Empresarial')}
               </h1>
               
               <p className="text-xs sm:text-[13px] text-blue-100/85 leading-relaxed max-w-md">
-                Conoce el nivel de transformación digital de tu empresa mediante una evaluación de 20 dimensiones críticas de negocio.
+                {t('home.subtitle', 'Conoce el nivel de transformación digital de tu empresa mediante una evaluación de 20 dimensiones críticas de negocio.')}
               </p>
 
               {/* Start Diagnosis Button */}
@@ -135,7 +134,7 @@ export default function HomeDashboardView({
                   className="group px-6 py-3 rounded-full bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-400 hover:from-blue-400 hover:to-teal-300 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2.5 shadow-lg shadow-cyan-500/25 hover:shadow-cyan-400/40 hover:scale-[1.02] active:scale-[0.99] transition-all cursor-pointer"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Comenzar Diagnóstico</span>
+                  <span>{t('home.startBtn', 'Comenzar Diagnóstico')}</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -151,7 +150,7 @@ export default function HomeDashboardView({
           {/* Bottom Duration Badge */}
           <div className="flex items-center gap-1.5 text-[11px] text-cyan-200/90 font-medium relative z-10 mt-1">
             <Timer className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Tiempo estimado: <strong>10 a 15 minutos</strong></span>
+            <span>{t('home.estimatedTime', 'Tiempo estimado:')} <strong>{t('home.estimatedTimeVal', '10 a 15 minutos')}</strong></span>
           </div>
 
         </div>
@@ -162,12 +161,12 @@ export default function HomeDashboardView({
           {/* Header of Widget */}
           <div className="flex items-center justify-between gap-2 pb-2">
             <h3 className="font-extrabold text-xs text-slate-800 dark:text-slate-100">
-              Tu nivel de madurez digital
+              {t('home.maturityTitle', 'Tu nivel de madurez digital')}
             </h3>
             <button
               onClick={() => setModalType('info-maturity')}
               className="text-slate-400 hover:text-blue-600 dark:hover:text-cyan-400 transition-colors p-1 cursor-pointer"
-              title="Información sobre la escala de madurez"
+              title={t('home.maturityInfoTitle', 'Información sobre la escala de madurez')}
             >
               <Info className="w-4 h-4" />
             </button>
@@ -208,7 +207,7 @@ export default function HomeDashboardView({
                   {latestScore}%
                 </span>
                 <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-wider">
-                  {latestLevel ? latestLevel.title : 'Completado'}
+                  {latestLevel ? latestLevel.title : t('home.completedStatus', 'Completado')}
                 </span>
               </div>
             </div>
@@ -223,26 +222,26 @@ export default function HomeDashboardView({
               {latestRecord ? (
                 <>
                   <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium leading-tight truncate">
-                    Última evaluación: <strong>{latestRecord.companyInfo.name}</strong>
+                    {t('home.latestAssessment', 'Última evaluación:')} <strong>{latestRecord.companyInfo.name}</strong>
                   </p>
                   <button
                     onClick={() => onViewReport(latestRecord)}
                     className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-cyan-400 hover:underline cursor-pointer"
                   >
-                    <span>Ver resultados y análisis</span>
+                    <span>{t('home.viewAnalysis', 'Ver resultados y análisis')}</span>
                     <ChevronRight className="w-3 h-3" />
                   </button>
                 </>
               ) : (
                 <>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                    Aún no has registrado ningún diagnóstico con tu correo.
+                    {t('home.savedEmpty', 'Aún no has registrado ningún diagnóstico con tu correo.')}
                   </p>
                   <button
                     onClick={onStartFresh}
                     className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-cyan-400 hover:underline cursor-pointer"
                   >
-                    <span>Realizar evaluación ahora</span>
+                    <span>{t('home.savedEvaluateNow', 'Realizar evaluación ahora')}</span>
                     <ChevronRight className="w-3 h-3" />
                   </button>
                 </>
@@ -268,9 +267,9 @@ export default function HomeDashboardView({
             <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-cyan-400 border border-blue-100 dark:border-blue-900/60 flex items-center justify-center mb-3.5">
               <Target className="w-5 h-5" />
             </div>
-            <h4 className="text-xs font-black text-slate-900 dark:text-white">100% Gratuito</h4>
+            <h4 className="text-xs font-black text-slate-900 dark:text-white">{t('home.featureFreeTitle', '100% Gratuito')}</h4>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-              Acceso ilimitado para cualquier sector productivo o comercial.
+              {t('home.featureFreeDesc', 'Acceso ilimitado para cualquier sector productivo o comercial.')}
             </p>
           </div>
 
@@ -278,7 +277,7 @@ export default function HomeDashboardView({
             onClick={() => setModalType('free')}
             className="mt-4 inline-flex items-center gap-1 text-[11px] font-extrabold text-blue-600 dark:text-cyan-400 group-hover:gap-1.5 transition-all cursor-pointer text-left"
           >
-            <span>Conocer más</span>
+            <span>{t('home.learnMore', 'Conocer más')}</span>
             <ArrowRight className="w-3 h-3" />
           </button>
         </div>
@@ -291,9 +290,9 @@ export default function HomeDashboardView({
             <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/60 flex items-center justify-center mb-3.5">
               <Zap className="w-5 h-5" />
             </div>
-            <h4 className="text-xs font-black text-slate-900 dark:text-white">Resultado Inmediato</h4>
+            <h4 className="text-xs font-black text-slate-900 dark:text-white">{t('home.featureInstantTitle', 'Resultado Inmediato')}</h4>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-              Obtén tus calificaciones por ejes al instante de enviar tus respuestas.
+              {t('home.featureInstantDesc', 'Obtén tus calificaciones por ejes al instante de enviar tus respuestas.')}
             </p>
           </div>
 
@@ -301,7 +300,7 @@ export default function HomeDashboardView({
             onClick={() => setModalType('how-it-works')}
             className="mt-4 inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400 group-hover:gap-1.5 transition-all cursor-pointer text-left"
           >
-            <span>Ver cómo funciona</span>
+            <span>{t('home.seeHowItWorks', 'Ver cómo funciona')}</span>
             <ArrowRight className="w-3 h-3" />
           </button>
         </div>
@@ -314,9 +313,9 @@ export default function HomeDashboardView({
             <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400 border border-purple-100 dark:border-purple-900/60 flex items-center justify-center mb-3.5">
               <FileDown className="w-5 h-5" />
             </div>
-            <h4 className="text-xs font-black text-slate-900 dark:text-white">Informe PDF Completo</h4>
+            <h4 className="text-xs font-black text-slate-900 dark:text-white">{t('home.featurePdfTitle', 'Informe PDF Completo')}</h4>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-              Descarga un documento formal con portada y resumen ejecutivo.
+              {t('home.featurePdfDesc', 'Descarga un documento formal con portada y resumen ejecutivo.')}
             </p>
           </div>
 
@@ -330,7 +329,7 @@ export default function HomeDashboardView({
             }}
             className="mt-4 inline-flex items-center gap-1 text-[11px] font-extrabold text-purple-600 dark:text-purple-400 group-hover:gap-1.5 transition-all cursor-pointer text-left"
           >
-            <span>{latestRecord ? 'Descargar PDF' : 'Descargar ejemplo'}</span>
+            <span>{latestRecord ? t('home.downloadPdf', 'Descargar PDF') : t('home.downloadSample', 'Descargar ejemplo')}</span>
             <ArrowRight className="w-3 h-3" />
           </button>
         </div>
@@ -343,9 +342,9 @@ export default function HomeDashboardView({
             <div className="w-10 h-10 rounded-2xl bg-fuchsia-50 text-fuchsia-600 dark:bg-fuchsia-950/60 dark:text-fuchsia-400 border border-fuchsia-100 dark:border-fuchsia-900/60 flex items-center justify-center mb-3.5">
               <BrainCircuit className="w-5 h-5" />
             </div>
-            <h4 className="text-xs font-black text-slate-900 dark:text-white">Plan de Mejora</h4>
+            <h4 className="text-xs font-black text-slate-900 dark:text-white">{t('home.featureRoadmapTitle', 'Plan de Mejora')}</h4>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-              Recomendaciones automatizadas y estructuradas en fases cronológicas.
+              {t('home.featureRoadmapDesc', 'Recomendaciones automatizadas y estructuradas en fases cronológicas.')}
             </p>
           </div>
 
@@ -359,7 +358,7 @@ export default function HomeDashboardView({
             }}
             className="mt-4 inline-flex items-center gap-1 text-[11px] font-extrabold text-fuchsia-600 dark:text-fuchsia-400 group-hover:gap-1.5 transition-all cursor-pointer text-left"
           >
-            <span>Ver plan de mejora</span>
+            <span>{t('home.viewPlan', 'Ver plan de mejora')}</span>
             <ArrowRight className="w-3 h-3" />
           </button>
         </div>
@@ -374,10 +373,10 @@ export default function HomeDashboardView({
         <div>
           <h3 className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
             <BarChart3 className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
-            <span>Mis Diagnósticos Guardados</span>
+            <span>{t('home.savedTitle', 'Mis Diagnósticos Guardados')}</span>
           </h3>
           <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-none mt-0.5">
-            Se conserva un máximo de 2 registros; el más antiguo se reemplaza.
+            {t('home.savedSubtitle', 'Historial de evaluaciones guardadas para consultar o descargar cuando lo desees.')}
           </p>
         </div>
 
@@ -388,13 +387,13 @@ export default function HomeDashboardView({
               <FileClock className="w-5 h-5" />
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Aún no has registrado ningún diagnóstico con tu correo.
+              {t('home.savedEmpty', 'Aún no has registrado ningún diagnóstico con tu correo.')}
             </p>
             <button
               onClick={onStartFresh}
               className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-cyan-400 hover:underline cursor-pointer"
             >
-              <span>Realizar evaluación ahora</span>
+              <span>{t('home.savedEvaluateNow', 'Realizar evaluación ahora')}</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -427,13 +426,13 @@ export default function HomeDashboardView({
                       onClick={() => onViewReport(rec)}
                       className="flex-1 py-1.5 px-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-950/70 text-blue-600 dark:text-cyan-400 font-bold text-xs cursor-pointer transition-all text-center border border-blue-100 dark:border-blue-900/30"
                     >
-                      Ver Informe
+                      {t('home.viewReport', 'Ver Informe')}
                     </button>
                     <button
                       onClick={() => onExportPdf(rec)}
                       className="flex-1 py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs cursor-pointer transition-all text-center"
                     >
-                      Exportar PDF
+                      {t('home.exportPdf', 'Exportar PDF')}
                     </button>
                     {deletingId === rec.id ? (
                       <div className="flex items-center gap-1 shrink-0 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 rounded-xl p-0.5 animate-in fade-in duration-150">

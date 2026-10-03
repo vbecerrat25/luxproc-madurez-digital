@@ -301,15 +301,25 @@ export default function InteractiveTourOverlay({
 
   // Card position calculations relative to target rect
   const padding = 8;
-  const cardWidth = 380; // approximate width of card
-  const cardHeight = 260; // approximate height of card
   const viewportWidth = windowSize.width || window.innerWidth;
   const viewportHeight = windowSize.height || window.innerHeight;
+  const isMobile = viewportWidth < 640;
+  const cardWidth = Math.min(380, viewportWidth - 32); // ensure card is never wider than screen
+  const cardHeight = 280;
 
   let tooltipStyle: React.CSSProperties = {};
   let placement = currentStep.preferredPlacement || 'bottom';
 
-  if (targetRect) {
+  if (isMobile) {
+    // On mobile devices, dock card cleanly near the bottom with safe margins
+    tooltipStyle = {
+      bottom: '16px',
+      left: '12px',
+      right: '12px',
+      maxWidth: 'calc(100vw - 24px)',
+      width: 'auto',
+    };
+  } else if (targetRect) {
     const spaceBelow = viewportHeight - (targetRect.bottom + padding);
     const spaceAbove = targetRect.top - padding;
     const spaceRight = viewportWidth - (targetRect.right + padding);
@@ -342,12 +352,13 @@ export default function InteractiveTourOverlay({
       tooltipStyle = { top: `${top}px`, left: `${left}px`, maxWidth: `${cardWidth}px` };
     }
   } else {
-    // Center modal if target is not found (or on mobile if hidden)
+    // Center modal if target is not found
     tooltipStyle = {
       top: '50%',
       left: '50%',
       transform: 'translate(-50%, -50%)',
-      maxWidth: `${cardWidth}px`
+      maxWidth: `${cardWidth}px`,
+      width: 'calc(100% - 32px)'
     };
   }
 
@@ -408,7 +419,7 @@ export default function InteractiveTourOverlay({
 
       {/* FLOATING INTERACTIVE TOOLTIP CARD */}
       <div
-        className="fixed z-50 w-full p-4 pointer-events-auto"
+        className={`fixed z-50 pointer-events-auto ${isMobile ? 'p-0' : 'w-full p-4'}`}
         style={tooltipStyle}
         onClick={(e) => e.stopPropagation()}
       >

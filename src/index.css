@@ -13,6 +13,16 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+/* Ensure no horizontal scrolling or viewport blowout on mobile devices */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  -webkit-text-size-adjust: 100%;
+}
+
 /* Custom background animation for technological subtle particles */
 @keyframes float {
   0% { transform: translateY(0px) translateX(0px); }
