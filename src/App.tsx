@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Sun, Moon, Building2, Timer, CheckCircle2, Zap, FileDown, BrainCircuit, 
   ShieldAlert, Sparkles, RefreshCw, Play, ArrowRight, ChevronRight, Activity, 
@@ -102,6 +102,204 @@ export default function App() {
       }
     ];
   });
+
+  // -----------------------------------------
+  // HISTORY SYNCHRONIZATION REFS & NAVIGATION CONTROLLER
+  // -----------------------------------------
+  const viewRef = useRef(view);
+  viewRef.current = view;
+
+  const previousViewRef = useRef(previousView);
+  previousViewRef.current = previousView;
+
+  const completedRecordsRef = useRef(completedRecords);
+  completedRecordsRef.current = completedRecords;
+
+  const activeRecordRef = useRef(activeRecord);
+  activeRecordRef.current = activeRecord;
+
+  const showNotificationModalRef = useRef(showNotificationModal);
+  showNotificationModalRef.current = showNotificationModal;
+
+  const showScheduleMeetingModalRef = useRef(showScheduleMeetingModal);
+  showScheduleMeetingModalRef.current = showScheduleMeetingModal;
+
+  const showSettingsModalRef = useRef(showSettingsModal);
+  showSettingsModalRef.current = showSettingsModal;
+
+  const showSecurityModalRef = useRef(showSecurityModal);
+  showSecurityModalRef.current = showSecurityModal;
+
+  const isMobileSidebarOpenRef = useRef(isMobileSidebarOpen);
+  isMobileSidebarOpenRef.current = isMobileSidebarOpen;
+
+  const showUserDropdownRef = useRef(showUserDropdown);
+  showUserDropdownRef.current = showUserDropdown;
+
+  // Central Navigation & Browser History Controller
+  // Makes hardware back button on mobile / browser navigation versatile and natural
+  const navigateToView = (
+    nextView: 'home' | 'survey' | 'results' | 'admin' | 'print',
+    options?: {
+      record?: DiagnosticRecord | null;
+      previousView?: 'home' | 'results' | 'admin';
+      replace?: boolean;
+    }
+  ) => {
+    if (options?.record !== undefined) {
+      setActiveRecord(options.record);
+    }
+    if (options?.previousView) {
+      setPreviousView(options.previousView);
+    }
+    setView(nextView);
+
+    // Close any open modals
+    setShowNotificationModal(false);
+    setShowScheduleMeetingModal(false);
+    setShowSettingsModal(false);
+    setShowSecurityModal(false);
+    setIsMobileSidebarOpen(false);
+    setShowUserDropdown(false);
+
+    const targetRecordId = options?.record !== undefined
+      ? (options.record ? options.record.id : null)
+      : (nextView === 'home' ? null : (activeRecordRef.current?.id || null));
+
+    const stateObj = {
+      view: nextView,
+      recordId: targetRecordId,
+      previousView: options?.previousView || previousViewRef.current || 'home',
+      modal: null,
+      step: nextView === 'survey' ? 0 : undefined
+    };
+
+    try {
+      if (options?.replace) {
+        window.history.replaceState(stateObj, '', window.location.href);
+      } else if (!window.history.state || window.history.state.view !== nextView || window.history.state.recordId !== targetRecordId) {
+        window.history.pushState(stateObj, '', window.location.href);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const openModal = (modalName: 'notification' | 'meeting' | 'settings' | 'security' | 'sidebar') => {
+    if (modalName === 'notification') { setShowNotificationModal(true); showNotificationModalRef.current = true; }
+    if (modalName === 'meeting') { setShowScheduleMeetingModal(true); showScheduleMeetingModalRef.current = true; }
+    if (modalName === 'settings') { setShowSettingsModal(true); showSettingsModalRef.current = true; }
+    if (modalName === 'security') { setShowSecurityModal(true); showSecurityModalRef.current = true; }
+    if (modalName === 'sidebar') { setIsMobileSidebarOpen(true); isMobileSidebarOpenRef.current = true; }
+
+    try {
+      window.history.pushState({
+        view: viewRef.current,
+        modal: modalName,
+        recordId: activeRecordRef.current?.id || null
+      }, '', window.location.href);
+    } catch {
+      // ignore
+    }
+  };
+
+  const closeModal = (modalName?: 'notification' | 'meeting' | 'settings' | 'security' | 'sidebar') => {
+    if (modalName === 'notification') { setShowNotificationModal(false); showNotificationModalRef.current = false; }
+    else if (modalName === 'meeting') { setShowScheduleMeetingModal(false); showScheduleMeetingModalRef.current = false; }
+    else if (modalName === 'settings') { setShowSettingsModal(false); showSettingsModalRef.current = false; }
+    else if (modalName === 'security') { setShowSecurityModal(false); showSecurityModalRef.current = false; }
+    else if (modalName === 'sidebar') { setIsMobileSidebarOpen(false); isMobileSidebarOpenRef.current = false; }
+    else {
+      setShowNotificationModal(false);
+      setShowScheduleMeetingModal(false);
+      setShowSettingsModal(false);
+      setShowSecurityModal(false);
+      setIsMobileSidebarOpen(false);
+      showNotificationModalRef.current = false;
+      showScheduleMeetingModalRef.current = false;
+      showSettingsModalRef.current = false;
+      showSecurityModalRef.current = false;
+      isMobileSidebarOpenRef.current = false;
+    }
+
+    try {
+      if (window.history.state && window.history.state.modal) {
+        window.history.back();
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  // Hardware & Mobile Browser Back Button Controller (popstate)
+  useEffect(() => {
+    try {
+      const currentState = window.history.state;
+      if (!currentState || !currentState.view) {
+        window.history.replaceState({ view: 'home', modal: null }, '', window.location.href);
+      }
+    } catch {
+      // ignore
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      // 1. If any modal or drawer is open when back is pressed, close it first and stay on the active view
+      if (
+        showNotificationModalRef.current ||
+        showScheduleMeetingModalRef.current ||
+        showSettingsModalRef.current ||
+        showSecurityModalRef.current ||
+        isMobileSidebarOpenRef.current ||
+        showUserDropdownRef.current
+      ) {
+        setShowNotificationModal(false);
+        setShowScheduleMeetingModal(false);
+        setShowSettingsModal(false);
+        setShowSecurityModal(false);
+        setIsMobileSidebarOpen(false);
+        setShowUserDropdown(false);
+        showNotificationModalRef.current = false;
+        showScheduleMeetingModalRef.current = false;
+        showSettingsModalRef.current = false;
+        showSecurityModalRef.current = false;
+        isMobileSidebarOpenRef.current = false;
+        showUserDropdownRef.current = false;
+        return;
+      }
+
+      // 2. If in survey questions, let SurveyWizard manage step backwards
+      if (event.state && event.state.view === 'survey') {
+        if (viewRef.current !== 'survey') {
+          setView('survey');
+        }
+        return;
+      }
+
+      // 3. View transitions on back button
+      const state = event.state;
+      if (state && state.view) {
+        setView(state.view);
+        if (state.recordId) {
+          const rec = completedRecordsRef.current.find(r => r.id === state.recordId);
+          if (rec) setActiveRecord(rec);
+        } else if (state.view === 'home') {
+          setActiveRecord(null);
+        }
+        if (state.previousView) {
+          setPreviousView(state.previousView);
+        }
+      } else {
+        // Fallback: If no state or state is empty, return to home
+        setView('home');
+        setActiveRecord(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   // -----------------------------------------
   // HOOKS & PERSISTENCE
@@ -700,12 +898,12 @@ export default function App() {
 
     saveCompletedRecord(newRecord);
     setActiveRecord(newRecord);
-    setView('results');
     setHasDraft(false);
+    navigateToView('results', { record: newRecord, previousView: 'home' });
   };
 
   const handleResumeSurvey = () => {
-    setView('survey');
+    navigateToView('survey');
   };
 
   const handleStartFresh = () => {
@@ -713,7 +911,7 @@ export default function App() {
     safeStorage.removeItem('loopsblock_draft_responses');
     safeStorage.removeItem('loopsblock_draft_step');
     setHasDraft(false);
-    setView('survey');
+    navigateToView('survey');
   };
 
   // Dismiss a notification without triggering its action
@@ -749,9 +947,7 @@ export default function App() {
         || activeRecord 
         || completedRecords[0];
       if (targetRec) {
-        setActiveRecord(targetRec);
-        setPreviousView(view === 'print' ? 'home' : (view as any));
-        setView('print');
+        navigateToView('print', { record: targetRec, previousView: view === 'print' ? 'home' : (view as any) });
       } else {
         handleStartFresh();
       }
@@ -760,30 +956,28 @@ export default function App() {
         || activeRecord 
         || completedRecords[0];
       if (targetRec) {
-        setActiveRecord(targetRec);
-        setView('results');
+        navigateToView('results', { record: targetRec });
       } else {
         handleStartFresh();
       }
     } else if (act === 'security' || t.includes('cifrado') || m.includes('cifrado') || t.includes('seguridad')) {
-      setShowSecurityModal(true);
+      openModal('security');
     } else if (act === 'meeting' || item.category === 'meeting' || t.includes('reunión')) {
-      setShowScheduleMeetingModal(true);
+      openModal('meeting');
     } else if (act === 'admin') {
       if (role === 'admin') {
-        setView('admin');
+        navigateToView('admin');
       } else {
-        setView('home');
+        navigateToView('home');
       }
     } else {
-      setView('home');
+      navigateToView('home');
     }
   };
 
   const handleSelectSidebarTab = (tab: 'home' | 'survey' | 'results' | 'recommendations' | 'reports' | 'settings' | 'schedule' | 'admin') => {
     if (tab === 'home') {
-      setView('home');
-      setActiveRecord(null);
+      navigateToView('home', { record: null });
     } else if (tab === 'survey') {
       handleStartFresh();
     } else if (tab === 'results' || tab === 'recommendations') {
@@ -791,10 +985,9 @@ export default function App() {
         r => r.companyInfo.contactEmail.toLowerCase().trim() === currentUser.email.toLowerCase().trim()
       ) : [];
       if (activeRecord) {
-        setView('results');
+        navigateToView('results', { record: activeRecord });
       } else if (userRecs.length > 0) {
-        setActiveRecord(userRecs[0]);
-        setView('results');
+        navigateToView('results', { record: userRecs[0] });
       } else {
         handleStartFresh();
       }
@@ -803,21 +996,18 @@ export default function App() {
         r => r.companyInfo.contactEmail.toLowerCase().trim() === currentUser.email.toLowerCase().trim()
       ) : [];
       if (activeRecord) {
-        setPreviousView(view === 'print' ? 'home' : (view as any));
-        setView('print');
+        navigateToView('print', { record: activeRecord, previousView: view === 'print' ? 'home' : (view as any) });
       } else if (userRecs.length > 0) {
-        setActiveRecord(userRecs[0]);
-        setPreviousView('home');
-        setView('print');
+        navigateToView('print', { record: userRecs[0], previousView: 'home' });
       } else {
-        setView('home');
+        navigateToView('home');
       }
     } else if (tab === 'settings') {
-      setShowSettingsModal(true);
+      openModal('settings');
     } else if (tab === 'schedule') {
-      setShowScheduleMeetingModal(true);
+      openModal('meeting');
     } else if (tab === 'admin') {
-      setView('admin');
+      navigateToView('admin');
     }
   };
 
@@ -854,7 +1044,7 @@ export default function App() {
               <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
                 {/* Mobile sidebar button */}
                 <button
-                  onClick={() => setIsMobileSidebarOpen(true)}
+                  onClick={() => openModal('sidebar')}
                   className="lg:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   title="Abrir menú"
                 >
@@ -862,7 +1052,7 @@ export default function App() {
                 </button>
 
                 <button
-                  onClick={() => { setView('home'); setActiveRecord(null); }}
+                  onClick={() => navigateToView('home', { record: null })}
                   className="flex items-center gap-2 sm:gap-3 cursor-pointer text-left focus:outline-none"
                 >
                   <img 
@@ -899,7 +1089,7 @@ export default function App() {
                 {/* View/Dashboard Selector for Admin */}
                 {role === 'admin' && (
                   <button
-                    onClick={() => { setView(view === 'admin' ? 'home' : 'admin'); }}
+                    onClick={() => { navigateToView(view === 'admin' ? 'home' : 'admin'); }}
                     className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
                       view === 'admin'
                         ? 'bg-blue-600 text-white shadow-xs'
@@ -926,7 +1116,7 @@ export default function App() {
                 {/* Interactive Tour Guide Button (hidden on mobile, accessible via dropdown) */}
                 <button
                   onClick={() => {
-                    setView('home');
+                    navigateToView('home');
                     setShowTour(true);
                   }}
                   className="hidden sm:flex p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-300 transition-all cursor-pointer shadow-2xs shrink-0"
@@ -938,7 +1128,7 @@ export default function App() {
                 {/* Security Shield & Encryption Indicator */}
                 <button
                   id="security-shield-btn"
-                  onClick={() => setShowSecurityModal(true)}
+                  onClick={() => openModal('security')}
                   className="p-1.5 sm:p-2 rounded-xl border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all cursor-pointer shadow-2xs flex items-center gap-1.5 shrink-0"
                   title="Cifrado Militar AES-256 Activo | Protección Anti-Phishing"
                 >
@@ -950,7 +1140,7 @@ export default function App() {
 
                 {/* Notification Bell with Badge */}
                 <button
-                  onClick={() => setShowNotificationModal(true)}
+                  onClick={() => openModal('notification')}
                   className="relative p-1.5 sm:p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 transition-all cursor-pointer shadow-2xs shrink-0"
                   title="Notificaciones"
                 >
@@ -1010,7 +1200,7 @@ export default function App() {
                         <button
                           onClick={() => {
                             setShowUserDropdown(false);
-                            setView('home');
+                            navigateToView('home');
                             setShowTour(true);
                           }}
                           className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all cursor-pointer mt-1"
@@ -1021,7 +1211,7 @@ export default function App() {
                         <button
                           onClick={() => {
                             setShowUserDropdown(false);
-                            setShowSettingsModal(true);
+                            openModal('settings');
                           }}
                           className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
                         >
@@ -1031,7 +1221,7 @@ export default function App() {
                         <button
                           onClick={() => {
                             setShowUserDropdown(false);
-                            setShowScheduleMeetingModal(true);
+                            openModal('meeting');
                           }}
                           className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-blue-600 dark:text-cyan-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all cursor-pointer"
                         >
@@ -1100,14 +1290,14 @@ export default function App() {
               <div className="fixed inset-0 z-50 lg:hidden flex">
                 <div 
                   className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" 
-                  onClick={() => setIsMobileSidebarOpen(false)} 
+                  onClick={() => closeModal('sidebar')} 
                 />
                 <div className="relative w-72 max-w-[85vw] bg-white dark:bg-[#091122] h-full shadow-2xl z-10 flex flex-col">
                   {/* Drawer Header */}
                   <div className="p-3.5 flex justify-between items-center border-b border-slate-200 dark:border-slate-800">
                     <span className="font-black text-xs text-slate-800 dark:text-white uppercase tracking-wider">{t('header.menu', 'Menú de Navegación')}</span>
                     <button 
-                      onClick={() => setIsMobileSidebarOpen(false)} 
+                      onClick={() => closeModal('sidebar')} 
                       className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
                       title="Cerrar menú"
                     >
@@ -1138,7 +1328,7 @@ export default function App() {
                       <button
                         id="mobile-drawer-logout-btn"
                         onClick={() => {
-                          setIsMobileSidebarOpen(false);
+                          closeModal('sidebar');
                           handleLogout();
                         }}
                         className="w-full mt-3 flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 font-bold text-xs transition-all cursor-pointer shadow-xs"
@@ -1158,7 +1348,7 @@ export default function App() {
                         view === 'admin' ? 'admin' : 'home'
                       }
                       onSelectTab={(tab) => {
-                        setIsMobileSidebarOpen(false);
+                        closeModal('sidebar');
                         handleSelectSidebarTab(tab);
                       }}
                       hasRecords={completedRecords.length > 0}
@@ -1184,13 +1374,10 @@ export default function App() {
                   onStartFresh={handleStartFresh}
                   onResumeSurvey={handleResumeSurvey}
                   onViewReport={(rec) => {
-                    setActiveRecord(rec);
-                    setView('results');
+                    navigateToView('results', { record: rec, previousView: 'home' });
                   }}
                   onExportPdf={(rec) => {
-                    setActiveRecord(rec);
-                    setPreviousView('home');
-                    setView('print');
+                    navigateToView('print', { record: rec, previousView: 'home' });
                   }}
                   onDeleteRecord={handleDeleteRecord}
                   onSetDeletingId={setDeletingId}
@@ -1200,7 +1387,11 @@ export default function App() {
             {/* VIEW: SURVEY WIZARD */}
             {view === 'survey' && (
               <div className="animate-in fade-in duration-500 py-2">
-                <SurveyWizard onComplete={handleSurveyComplete} defaultEmail={currentUser.email} />
+                <SurveyWizard 
+                  onComplete={handleSurveyComplete} 
+                  defaultEmail={currentUser.email} 
+                  onCancel={() => navigateToView('home')}
+                />
               </div>
             )}
 
@@ -1209,13 +1400,12 @@ export default function App() {
               <div className="animate-in fade-in duration-500">
                 <ResultsDashboard 
                   record={activeRecord} 
-                  userRecords={completedRecords}
-                  onRestart={() => { setView('home'); setActiveRecord(null); }} 
+                  userRecords={completedRecords} 
+                  onRestart={() => navigateToView('home')} 
                   onViewPrint={() => {
-                    setPreviousView('results');
-                    setView('print');
+                    navigateToView('print', { record: activeRecord, previousView: 'results' });
                   }}
-                  onBackToAdmin={role === 'admin' ? () => { setView('admin'); } : undefined}
+                  onBackToAdmin={role === 'admin' ? () => navigateToView('admin') : undefined}
                 />
               </div>
             )}
@@ -1226,13 +1416,10 @@ export default function App() {
                 <AdminPanel 
                   userRecords={completedRecords} 
                   onViewRecord={(rec) => {
-                    setActiveRecord(rec);
-                    setView('results');
+                    navigateToView('results', { record: rec, previousView: 'admin' });
                   }} 
                   onPrintRecord={(rec) => {
-                    setActiveRecord(rec);
-                    setPreviousView('admin');
-                    setView('print');
+                    navigateToView('print', { record: rec, previousView: 'admin' });
                   }}
                   onDeleteRecord={handleDeleteRecord}
                   onClearAllRecords={handleClearAllRecords}
@@ -1247,7 +1434,7 @@ export default function App() {
         {/* Interactive Notifications Modal */}
         <NotificationsModal
           isOpen={showNotificationModal}
-          onClose={() => setShowNotificationModal(false)}
+          onClose={() => closeModal('notification')}
           notifications={notifications}
           onMarkAllAsRead={handleMarkAllNotificationsAsRead}
           onClearAll={handleClearNotifications}
@@ -1259,22 +1446,22 @@ export default function App() {
         {/* Schedule Meeting Modal with Direct luxproc.com Link */}
         <ScheduleMeetingModal
           isOpen={showScheduleMeetingModal}
-          onClose={() => setShowScheduleMeetingModal(false)}
+          onClose={() => closeModal('meeting')}
         />
 
         {/* Security Shield & Encryption Audit Modal */}
         <SecurityShieldModal
           isOpen={showSecurityModal}
-          onClose={() => setShowSecurityModal(false)}
+          onClose={() => closeModal('security')}
         />
 
         {/* Global Settings Modal */}
         <HomeFeatureModals
           type={showSettingsModal ? 'settings' : null}
-          onClose={() => setShowSettingsModal(false)}
+          onClose={() => closeModal('settings')}
           onStartSurvey={handleStartFresh}
           onRestartTour={() => {
-            setView('home');
+            navigateToView('home');
             setShowTour(true);
           }}
           hasRecord={completedRecords.length > 0}
@@ -1315,7 +1502,7 @@ export default function App() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto justify-start sm:justify-end">
                   <button
-                    onClick={() => setView(previousView)}
+                    onClick={() => navigateToView(previousView || 'home')}
                     className="flex-1 sm:flex-none px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-bold cursor-pointer transition-all focus:outline-none shadow-sm text-center"
                   >
                     ← Volver

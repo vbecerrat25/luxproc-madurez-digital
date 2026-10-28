@@ -14,10 +14,11 @@ interface SurveyWizardProps {
   onComplete: (company: CompanyInfo, responses: DiagnosticResponse[]) => void;
   savedState?: { companyInfo: CompanyInfo; responses: DiagnosticResponse[]; currentStep: number };
   defaultEmail?: string;
+  onCancel?: () => void;
 }
 
-export default function SurveyWizard({ onComplete, savedState, defaultEmail }: SurveyWizardProps) {
-  const { t, currentQuestions = [], currentDimensions = [] } = useLanguage();
+export default function SurveyWizard({ onComplete, savedState, defaultEmail, onCancel }: SurveyWizardProps) {
+  const { t, language, currentQuestions = [], currentDimensions = [] } = useLanguage();
 
   // Dynamic assessment modules based on current language
   const MODULES = [
@@ -120,14 +121,26 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
     }
   }, [defaultEmail]);
 
+  // Synchronize wizard step with browser/device back and forward history
+  useEffect(() => {
+    const handleSurveyPopState = (e: PopStateEvent) => {
+      if (e.state && e.state.view === 'survey') {
+        const targetStep = typeof e.state.step === 'number' ? e.state.step : 0;
+        setCurrentStep(targetStep);
+      }
+    };
+    window.addEventListener('popstate', handleSurveyPopState);
+    return () => window.removeEventListener('popstate', handleSurveyPopState);
+  }, []);
+
   // Persist draft progress changes safely
   const saveProgressDraft = (updatedInfo: CompanyInfo, updatedResponses: DiagnosticResponse[], updatedStep: number) => {
     try {
       safeStorage.setJSON('loopsblock_draft_company', updatedInfo);
       safeStorage.setJSON('loopsblock_draft_responses', updatedResponses);
       safeStorage.setItem('loopsblock_draft_step', updatedStep.toString());
-    } catch (e) {
-      console.warn('Error al guardar borrador de progreso:', e);
+    } catch {
+      // ignore
     }
   };
 
@@ -186,6 +199,11 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
     const nextStep = 1;
     setCurrentStep(nextStep);
     saveProgressDraft(sanitizedInfo, responses, nextStep);
+    try {
+      window.history.pushState({ inSurvey: true, step: nextStep, view: 'survey' }, '', window.location.href);
+    } catch {
+      // ignore
+    }
   };
 
   // -----------------------------------------
@@ -265,6 +283,11 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
       saveProgressDraft(companyInfo, responses, nextStep);
+      try {
+        window.history.pushState({ inSurvey: true, step: nextStep, view: 'survey' }, '', window.location.href);
+      } catch {
+        // ignore
+      }
     } else {
       // Finish diagnostic
       onComplete(companyInfo, responses);
@@ -275,10 +298,31 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
   };
 
   const handleBack = () => {
-    if (currentStep > 0) {
+    if (currentStep > 1) {
       const nextStep = currentStep - 1;
       setCurrentStep(nextStep);
       saveProgressDraft(companyInfo, responses, nextStep);
+      try {
+        if (window.history.state && typeof window.history.state.step === 'number') {
+          window.history.back();
+          return;
+        }
+      } catch {
+        // ignore
+      }
+    } else if (currentStep === 1) {
+      setCurrentStep(0);
+      saveProgressDraft(companyInfo, responses, 0);
+      try {
+        if (window.history.state && typeof window.history.state.step === 'number') {
+          window.history.back();
+          return;
+        }
+      } catch {
+        // ignore
+      }
+    } else if (onCancel) {
+      onCancel();
     }
   };
 
@@ -563,14 +607,27 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
               </div>
             </div>
 
-            <button
-              id="start-wizard-btn"
-              type="submit"
-              className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-blue-600 text-white hover:bg-blue-500 font-extrabold text-sm transition-all shadow-md hover:shadow-lg hover:shadow-blue-500/20 cursor-pointer"
-            >
-              <Play className="w-4 h-4 fill-current" />
-              <span>{t('survey.startBtn')}</span>
-            </button>
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+              {onCancel && (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="w-full sm:w-auto px-5 py-3.5 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-extrabold text-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>{language === 'en' ? 'Back to Home' : language === 'pt' ? 'Voltar ao Início' : 'Volver al Inicio'}</span>
+                </button>
+              )}
+
+              <button
+                id="start-wizard-btn"
+                type="submit"
+                className="flex-1 w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-blue-600 text-white hover:bg-blue-500 font-extrabold text-sm transition-all shadow-md hover:shadow-lg hover:shadow-blue-500/20 cursor-pointer"
+              >
+                <Play className="w-4 h-4 fill-current" />
+                <span>{t('survey.startBtn')}</span>
+              </button>
+            </div>
 
           </form>
         </div>
