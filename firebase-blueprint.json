@@ -1,0 +1,22 @@
+{
+  "entities": {
+    "diagnostic": {
+      "title": "Diagnostic Record",
+      "description": "Evaluation record for company digital maturity assessment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyInfo": { "type": "object" },
+        "responses": { "type": "array" },
+        "metrics": { "type": "object" }
+      },
+      "required": ["id", "companyInfo"]
+    }
+  },
+  "firestore": {
+    "/diagnostics/{diagnosticId}": {
+      "entity": "diagnostic",
+      "description": "Diagnostic evaluation records"
+    }
+  }
+}

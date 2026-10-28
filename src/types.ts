@@ -61,6 +61,9 @@ export interface DiagnosticRecord {
   date: string;
   time: string;
   timestamp?: number; // millisecond timestamp for timeline calculations
+  createdAt?: string;
+  updatedAt?: string;
+  maturityLevel?: string;
   companyInfo: CompanyInfo;
   responses: DiagnosticResponse[];
   metrics: ScoreMetrics;

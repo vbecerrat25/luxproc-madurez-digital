@@ -3,7 +3,7 @@ import {
   Sun, Moon, Building2, Timer, CheckCircle2, Zap, FileDown, BrainCircuit, 
   ShieldAlert, Sparkles, RefreshCw, Play, ArrowRight, ChevronRight, Activity, 
   Cpu, Laptop, Users, Printer, LogOut, Trash2, Loader2, Bell, ChevronDown, 
-  Menu, X, Settings, HelpCircle, CalendarCheck 
+  Menu, X, Settings, HelpCircle, CalendarCheck, ShieldCheck, Lock 
 } from 'lucide-react';
 import { CompanyInfo, DiagnosticResponse, DiagnosticRecord } from './types';
 import { calculateMetrics } from './data';
@@ -18,8 +18,17 @@ import HomeFeatureModals from './components/HomeFeatureModals';
 import InteractiveTourOverlay from './components/InteractiveTourOverlay';
 import ScheduleMeetingModal from './components/ScheduleMeetingModal';
 import NotificationsModal, { AppNotification } from './components/NotificationsModal';
+import SecurityShieldModal from './components/SecurityShieldModal';
 import { useLanguage } from './i18n/LanguageContext';
 import { safeStorage } from './utils/storage';
+import { checkDomainAuthenticity } from './utils/security';
+import { runDataMigration, updateBackupVault } from './utils/dataMigration';
+import { 
+  saveRecordToFirestore, 
+  fetchRecordsFromFirestore, 
+  deleteRecordFromFirestore, 
+  mergeRecordsNonDestructive 
+} from './lib/firestoreService';
 
 export default function App() {
   const { t, getMaturityLevelI18n } = useLanguage();
@@ -44,6 +53,8 @@ export default function App() {
   const [showUserDropdown, setShowUserDropdown] = useState<boolean>(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [showTour, setShowTour] = useState<boolean>(false);
+  const [showSecurityModal, setShowSecurityModal] = useState<boolean>(false);
+  const [domainWarning, setDomainWarning] = useState<string | null>(null);
 
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
     const cached = safeStorage.getJSON<AppNotification[]>('luxproc_notifications', []);
@@ -56,6 +67,8 @@ export default function App() {
         category: 'update',
         date: 'Hoy',
         read: false,
+        actionType: 'survey',
+        actionLabel: 'Comenzar Diagnóstico',
       },
       {
         id: 'notif_2026',
@@ -64,6 +77,18 @@ export default function App() {
         category: 'system',
         date: '2026',
         read: false,
+        actionType: 'survey',
+        actionLabel: 'Evaluar Modelo',
+      },
+      {
+        id: 'notif_sec',
+        title: 'Cifrado Militar AES-256 Activo',
+        message: 'Tus datos empresariales están cifrados en reposo y protegidos contra phishing.',
+        category: 'system',
+        date: 'Activo',
+        read: true,
+        actionType: 'security',
+        actionLabel: 'Ver Cifrado AES-256',
       },
       {
         id: 'notif_pdf',
@@ -72,6 +97,8 @@ export default function App() {
         category: 'report',
         date: 'Activo',
         read: true,
+        actionType: 'pdf',
+        actionLabel: 'Ver Reporte PDF',
       }
     ];
   });
@@ -81,6 +108,12 @@ export default function App() {
   // -----------------------------------------
   // Load initial settings and data on mount
   useEffect(() => {
+    // 0. Anti-Phishing & Domain Integrity Check
+    const domainCheck = checkDomainAuthenticity();
+    if (!domainCheck.isValid) {
+      setDomainWarning(`Aviso de Seguridad: Dominio no reconocido (${domainCheck.host}). Posible suplantación de identidad o phishing.`);
+    }
+
     // 1. Theme Configuration
     const cachedTheme = safeStorage.getItem('loopsblock_theme') as 'light' | 'dark' | null;
     let defaultTheme = cachedTheme;
@@ -117,20 +150,24 @@ export default function App() {
       }
     }
 
-    // 3. Load permanent evaluations database (purging legacy mock IDs to start 100% blank)
-    let parsedRecords: DiagnosticRecord[] = [];
-    const cachedRecords = safeStorage.getJSON<DiagnosticRecord[] | null>('loopsblock_completed_diagnostics', null);
-    if (Array.isArray(cachedRecords)) {
-      try {
-        const legacyMockIds = new Set(['DIG-2026-981', 'DIG-2026-742', 'DIG-2026-413', 'DIG-2026-105', 'DIG-2026-211', 'DIG-2026-302']);
-        parsedRecords = cachedRecords.filter((r: DiagnosticRecord) => !legacyMockIds.has(r.id));
-        setCompletedRecords(parsedRecords);
-        safeStorage.setJSON('loopsblock_completed_diagnostics', parsedRecords);
-      } catch (e) {
-        parsedRecords = [];
-        setCompletedRecords([]);
+    // 3. Load permanent evaluations database with non-destructive auto-migration
+    const migratedRecords = runDataMigration();
+    setCompletedRecords(migratedRecords);
+
+    // 4. Asynchronously sync with Google Cloud Firestore (preserves client data across any update or device)
+    fetchRecordsFromFirestore().then((cloudRecords) => {
+      if (cloudRecords && cloudRecords.length > 0) {
+        const deletedIds = safeStorage.getJSON<string[]>('luxproc_deleted_ids', []);
+        const deletedSet = new Set(deletedIds);
+        const activeCloud = cloudRecords.filter(r => !deletedSet.has(r.id));
+        setCompletedRecords(prev => {
+          const merged = mergeRecordsNonDestructive(prev, activeCloud).filter(r => !deletedSet.has(r.id));
+          safeStorage.setJSON('loopsblock_completed_diagnostics', merged);
+          updateBackupVault(merged);
+          return merged;
+        });
       }
-    }
+    }).catch(() => {});
 
     // Check for print view query parameter
     try {
@@ -139,7 +176,7 @@ export default function App() {
       const printId = params.get('id');
       
       if (isPrintView && printId) {
-        const allRecs = parsedRecords;
+        const allRecs = migratedRecords;
         const record = allRecs.find(r => r.id === printId);
         if (record) {
           setActiveRecord(record);
@@ -158,8 +195,8 @@ export default function App() {
           setHasDraft(true);
         }
       }
-    } catch (e) {
-      console.warn('URL params check notice:', e);
+    } catch {
+      // ignore
     }
   }, []);
 
@@ -171,7 +208,7 @@ export default function App() {
     };
 
     const handleAfterPrint = () => {
-      const cachedTheme = localStorage.getItem('loopsblock_theme') || 'light';
+      const cachedTheme = safeStorage.getItem('loopsblock_theme') || 'light';
       if (cachedTheme === 'dark') {
         document.documentElement.classList.add('dark');
       }
@@ -204,7 +241,7 @@ export default function App() {
     safeStorage.setJSON('luxproc_notifications', []);
   };
 
-  // Sync completed evaluations database to safe local storage
+  // Sync completed evaluations database to safe local storage and Cloud Firestore
   // Preserves evaluation records permanently so users can review/download PDF anytime
   const saveCompletedRecord = (newRecord: DiagnosticRecord) => {
     let updated = [newRecord, ...completedRecords.filter(r => r.id !== newRecord.id)];
@@ -213,6 +250,10 @@ export default function App() {
     }
     setCompletedRecords(updated);
     safeStorage.setJSON('loopsblock_completed_diagnostics', updated);
+    updateBackupVault(updated);
+
+    // Non-blocking Cloud Firestore synchronization
+    saveRecordToFirestore(newRecord).catch(() => {});
 
     // Auto-create in-app notification
     const completionNotif: AppNotification = {
@@ -221,7 +262,10 @@ export default function App() {
       message: `El informe oficial para ${newRecord.companyInfo.name} (${newRecord.metrics.general}%) ya está disponible para revisión y descarga en PDF.`,
       category: 'report',
       date: 'Justo ahora',
-      read: false
+      read: false,
+      actionType: 'results',
+      targetRecordId: newRecord.id,
+      actionLabel: 'Ver Resultados y PDF',
     };
     const updatedNotifs = [completionNotif, ...notifications];
     setNotifications(updatedNotifs);
@@ -230,9 +274,21 @@ export default function App() {
 
   // Delete a saved diagnostic record
   const handleDeleteRecord = (id: string) => {
+    // 1. Blacklist ID so cloud sync never resurrects it
+    try {
+      const deletedIds = safeStorage.getJSON<string[]>('luxproc_deleted_ids', []);
+      if (!deletedIds.includes(id)) {
+        safeStorage.setJSON('luxproc_deleted_ids', [...deletedIds, id]);
+      }
+    } catch {
+      // ignore
+    }
+
     const updated = completedRecords.filter(r => r.id !== id);
     setCompletedRecords(updated);
-    localStorage.setItem('loopsblock_completed_diagnostics', JSON.stringify(updated));
+    safeStorage.setJSON('loopsblock_completed_diagnostics', updated);
+    updateBackupVault(updated);
+    deleteRecordFromFirestore(id).catch(() => {});
     if (activeRecord?.id === id) {
       setActiveRecord(null);
       setView('home');
@@ -244,11 +300,20 @@ export default function App() {
 
   // Clear all evaluations database to start 100% blank
   const handleClearAllRecords = () => {
+    try {
+      const currentIds = completedRecords.map(r => r.id);
+      const deletedIds = safeStorage.getJSON<string[]>('luxproc_deleted_ids', []);
+      safeStorage.setJSON('luxproc_deleted_ids', Array.from(new Set([...deletedIds, ...currentIds])));
+      completedRecords.forEach(r => deleteRecordFromFirestore(r.id).catch(() => {}));
+    } catch {
+      // ignore
+    }
     setCompletedRecords([]);
-    localStorage.removeItem('loopsblock_completed_diagnostics');
-    localStorage.removeItem('loopsblock_draft_company');
-    localStorage.removeItem('loopsblock_draft_responses');
-    localStorage.removeItem('loopsblock_draft_step');
+    safeStorage.removeItem('loopsblock_completed_diagnostics');
+    safeStorage.removeItem('luxproc_vault_backup');
+    safeStorage.removeItem('loopsblock_draft_company');
+    safeStorage.removeItem('loopsblock_draft_responses');
+    safeStorage.removeItem('loopsblock_draft_step');
     setActiveRecord(null);
     setHasDraft(false);
     setView('home');
@@ -258,7 +323,7 @@ export default function App() {
   const toggleTheme = () => {
     const nextTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(nextTheme);
-    localStorage.setItem('loopsblock_theme', nextTheme);
+    safeStorage.setItem('loopsblock_theme', nextTheme);
     if (nextTheme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -529,8 +594,8 @@ export default function App() {
                 // Cross-origin sheets might throw, ignore them
               }
             }
-          } catch (e) {
-            console.warn("Error patching cloned stylesheets:", e);
+          } catch {
+            // ignore
           }
 
           // Also patch any <style> inner text
@@ -553,9 +618,8 @@ export default function App() {
         window.getComputedStyle = originalGetComputedStyle;
         setIsGeneratingPdf(false);
       })
-      .catch((err: any) => {
+      .catch(() => {
         window.getComputedStyle = originalGetComputedStyle;
-        console.warn('PDF export fallback to print:', err);
         setIsGeneratingPdf(false);
         // Fallback
         window.print();
@@ -568,7 +632,7 @@ export default function App() {
   const handleLoginSuccess = (email: string, name: string, picture?: string) => {
     const user = { email, name, picture };
     setCurrentUser(user);
-    localStorage.setItem('luxproc_user', JSON.stringify(user));
+    safeStorage.setJSON('luxproc_user', user);
     
     const isAdmin = email.toLowerCase().trim() === 'luxproc.11@gmail.com';
     setRole(isAdmin ? 'admin' : 'user');
@@ -645,11 +709,75 @@ export default function App() {
   };
 
   const handleStartFresh = () => {
-    localStorage.removeItem('loopsblock_draft_company');
-    localStorage.removeItem('loopsblock_draft_responses');
-    localStorage.removeItem('loopsblock_draft_step');
+    safeStorage.removeItem('loopsblock_draft_company');
+    safeStorage.removeItem('loopsblock_draft_responses');
+    safeStorage.removeItem('loopsblock_draft_step');
     setHasDraft(false);
     setView('survey');
+  };
+
+  // Dismiss a notification without triggering its action
+  const handleDismissNotification = (id: string) => {
+    const updated = notifications.filter(n => n.id !== id);
+    setNotifications(updated);
+    safeStorage.setJSON('luxproc_notifications', updated);
+  };
+
+  // Perform notification action & remove it so it no longer appears
+  const handleNotificationClick = (item: AppNotification) => {
+    // 1. Remove notification so it no longer appears ("y si ya se dio clic a la notificacion y se realizo ya no debe de aparecer")
+    const updated = notifications.filter(n => n.id !== item.id);
+    setNotifications(updated);
+    safeStorage.setJSON('luxproc_notifications', updated);
+
+    // 2. Close notification modal
+    setShowNotificationModal(false);
+
+    // 3. Navigate / trigger corresponding action
+    const t = (item.title || '').toLowerCase();
+    const m = (item.message || '').toLowerCase();
+    const act = item.actionType;
+
+    if (act === 'survey' || t.includes('bienvenido') || t.includes('modelo 2026') || m.includes('comienza tu diagnóstico') || t.includes('diagnóstico')) {
+      if (hasDraft) {
+        handleResumeSurvey();
+      } else {
+        handleStartFresh();
+      }
+    } else if (act === 'pdf' || t.includes('pdf') || m.includes('pdf') || t.includes('informe')) {
+      const targetRec = (item.targetRecordId && completedRecords.find(r => r.id === item.targetRecordId))
+        || activeRecord 
+        || completedRecords[0];
+      if (targetRec) {
+        setActiveRecord(targetRec);
+        setPreviousView(view === 'print' ? 'home' : (view as any));
+        setView('print');
+      } else {
+        handleStartFresh();
+      }
+    } else if (act === 'results' || t.includes('evaluación') || t.includes('resultados')) {
+      const targetRec = (item.targetRecordId && completedRecords.find(r => r.id === item.targetRecordId))
+        || activeRecord 
+        || completedRecords[0];
+      if (targetRec) {
+        setActiveRecord(targetRec);
+        setView('results');
+      } else {
+        handleStartFresh();
+      }
+    } else if (act === 'security' || t.includes('cifrado') || m.includes('cifrado') || t.includes('seguridad')) {
+      setShowSecurityModal(true);
+    } else if (act === 'meeting' || item.category === 'meeting' || t.includes('reunión')) {
+      setShowScheduleMeetingModal(true);
+    } else if (act === 'admin') {
+      if (role === 'admin') {
+        setView('admin');
+      } else {
+        setView('home');
+      }
+    } else {
+      setView('home');
+    }
   };
 
   const handleSelectSidebarTab = (tab: 'home' | 'survey' | 'results' | 'recommendations' | 'reports' | 'settings' | 'schedule' | 'admin') => {
@@ -807,6 +935,19 @@ export default function App() {
                   <HelpCircle className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                 </button>
 
+                {/* Security Shield & Encryption Indicator */}
+                <button
+                  id="security-shield-btn"
+                  onClick={() => setShowSecurityModal(true)}
+                  className="p-1.5 sm:p-2 rounded-xl border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all cursor-pointer shadow-2xs flex items-center gap-1.5 shrink-0"
+                  title="Cifrado Militar AES-256 Activo | Protección Anti-Phishing"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
+                  <span className="hidden xl:inline text-[10px] font-black uppercase tracking-wider">
+                    Cifrado
+                  </span>
+                </button>
+
                 {/* Notification Bell with Badge */}
                 <button
                   onClick={() => setShowNotificationModal(true)}
@@ -916,6 +1057,23 @@ export default function App() {
 
             </div>
           </header>
+
+          {/* Anti-Phishing Domain Spoofing Warning Banner */}
+          {domainWarning && (
+            <div className="bg-amber-500 text-slate-950 px-4 py-2.5 text-xs font-bold flex items-center justify-between border-b border-amber-600 shadow-sm relative z-20">
+              <div className="flex items-center gap-2 max-w-5xl mx-auto">
+                <ShieldAlert className="w-4 h-4 shrink-0 text-slate-950" />
+                <span>{domainWarning}</span>
+              </div>
+              <button 
+                onClick={() => setDomainWarning(null)} 
+                className="text-slate-950 hover:text-black p-1 cursor-pointer"
+                title="Cerrar aviso"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {/* Core Layout: Left Sidebar + Main Content Area */}
           <div className="flex-1 flex flex-row w-full relative z-10">
@@ -1094,12 +1252,20 @@ export default function App() {
           onMarkAllAsRead={handleMarkAllNotificationsAsRead}
           onClearAll={handleClearNotifications}
           onMarkAsRead={handleMarkNotificationAsRead}
+          onNotificationClick={handleNotificationClick}
+          onDismissNotification={handleDismissNotification}
         />
 
         {/* Schedule Meeting Modal with Direct luxproc.com Link */}
         <ScheduleMeetingModal
           isOpen={showScheduleMeetingModal}
           onClose={() => setShowScheduleMeetingModal(false)}
+        />
+
+        {/* Security Shield & Encryption Audit Modal */}
+        <SecurityShieldModal
+          isOpen={showSecurityModal}
+          onClose={() => setShowSecurityModal(false)}
         />
 
         {/* Global Settings Modal */}

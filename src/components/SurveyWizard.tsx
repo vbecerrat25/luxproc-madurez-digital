@@ -3,10 +3,11 @@ import { CompanyInfo, DiagnosticResponse, SectorType, CompanySizeType, TargetCus
 import TechnicalTermPopover from './TechnicalTermPopover';
 import { useLanguage } from '../i18n/LanguageContext';
 import { safeStorage } from '../utils/storage';
+import { sanitizeInput } from '../utils/security';
 import { 
   Building2, Mail, Compass, HelpCircle, ArrowRight, ArrowLeft, 
   Check, Play, Save, CheckCircle2, RotateCcw, Building, Users, Activity,
-  Store, Briefcase, Hammer, Info, Sparkles
+  Store, Briefcase, Hammer, Info, Sparkles, ShieldCheck, Lock
 } from 'lucide-react';
 
 interface SurveyWizardProps {
@@ -166,17 +167,25 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
     e.preventDefault();
     setIsFormTouched(true);
 
-    const safeName = (companyInfo.name || '').trim();
-    const safeEmail = (companyInfo.contactEmail || '').trim();
-    const safeCountry = (companyInfo.country || '').trim();
+    const safeName = sanitizeInput(companyInfo.name || '').trim();
+    const safeEmail = sanitizeInput(companyInfo.contactEmail || '').trim();
+    const safeCountry = sanitizeInput(companyInfo.country || '').trim();
 
     if (!safeName || !safeEmail || !safeCountry) {
       return;
     }
 
+    const sanitizedInfo: CompanyInfo = {
+      ...companyInfo,
+      name: safeName,
+      contactEmail: safeEmail,
+      country: safeCountry
+    };
+
+    setCompanyInfo(sanitizedInfo);
     const nextStep = 1;
     setCurrentStep(nextStep);
-    saveProgressDraft(companyInfo, responses, nextStep);
+    saveProgressDraft(sanitizedInfo, responses, nextStep);
   };
 
   // -----------------------------------------
@@ -259,9 +268,9 @@ export default function SurveyWizard({ onComplete, savedState, defaultEmail }: S
     } else {
       // Finish diagnostic
       onComplete(companyInfo, responses);
-      localStorage.removeItem('loopsblock_draft_company');
-      localStorage.removeItem('loopsblock_draft_responses');
-      localStorage.removeItem('loopsblock_draft_step');
+      safeStorage.removeItem('loopsblock_draft_company');
+      safeStorage.removeItem('loopsblock_draft_responses');
+      safeStorage.removeItem('loopsblock_draft_step');
     }
   };
 

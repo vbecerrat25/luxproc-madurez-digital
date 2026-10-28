@@ -1,9 +1,9 @@
-import React from 'react';
 import { 
   Compass, Workflow, BadgeDollarSign, ShieldCheck, Users2, 
   Rocket, Star, Wrench, Clock, CheckCircle2, Award, Calendar, 
   Building2, Mail, Hash, BarChart3, TrendingUp,
-  Lock, MessageSquare, Cloud, ShoppingBag, Database, Cpu, Sparkles, AlertCircle
+  Lock, MessageSquare, Cloud, ShoppingBag, Database, Cpu, Sparkles, AlertCircle,
+  Target, Settings, Users, FileText
 } from 'lucide-react';
 import { DiagnosticRecord, ScoreMetrics, CompanyInfo } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -150,54 +150,101 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
     <div className="full-document-report w-full bg-white text-slate-900 print:text-black font-sans">
       
       {/* ========================================================================= */}
-      {/* PÁGINA 1: PORTADA EJECUTIVA OFICIAL */}
+      {/* PÁGINA 1: PORTADA EJECUTIVA OFICIAL (Estilo Certificado Luxproc) */}
       {/* ========================================================================= */}
       <div 
-        className="pdf-page-container flex flex-col justify-between border-4 border-double border-slate-900 p-8 sm:p-12 bg-white"
-        style={{ minHeight: '1060px', maxHeight: '1060px', height: '1060px', boxSizing: 'border-box', overflow: 'hidden', pageBreakInside: 'avoid', breakInside: 'avoid', pageBreakAfter: 'always', breakAfter: 'page' }}
+        className="pdf-page-container relative flex flex-col justify-between border border-slate-300 p-8 sm:p-12 bg-white overflow-hidden"
+        style={{ minHeight: '1060px', maxHeight: '1060px', height: '1060px', boxSizing: 'border-box', pageBreakInside: 'avoid', breakInside: 'avoid', pageBreakAfter: 'always', breakAfter: 'page' }}
       >
+        {/* Circuit lines background accent (Top Right) */}
+        <svg className="absolute -top-4 -right-4 w-56 h-56 text-sky-400/20 pointer-events-none" viewBox="0 0 200 200" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M20 30 L90 30 L130 70 L190 70" />
+          <circle cx="190" cy="70" r="3.5" fill="currentColor" />
+          <circle cx="20" cy="30" r="3.5" fill="currentColor" />
+          <path d="M60 50 L110 50 L145 85 L185 85" />
+          <circle cx="185" cy="85" r="3" fill="currentColor" />
+          <path d="M90 110 L130 150 L180 150" />
+          <circle cx="180" cy="150" r="3" fill="currentColor" />
+          <path d="M140 30 L170 30 L195 55" />
+          <circle cx="195" cy="55" r="2.5" fill="currentColor" />
+        </svg>
+
+        {/* Circuit lines background accent (Bottom Left) */}
+        <svg className="absolute -bottom-4 -left-4 w-56 h-56 text-sky-400/20 pointer-events-none" viewBox="0 0 200 200" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M20 170 L90 170 L130 130 L190 130" />
+          <circle cx="20" cy="170" r="3.5" fill="currentColor" />
+          <circle cx="190" cy="130" r="3.5" fill="currentColor" />
+          <path d="M60 150 L110 150 L145 115 L185 115" />
+          <circle cx="185" cy="115" r="3" fill="currentColor" />
+          <path d="M90 90 L130 50 L170 50" />
+          <circle cx="170" cy="50" r="3" fill="currentColor" />
+        </svg>
+
         {/* Header Branding */}
-        <div className="flex justify-between items-center border-b-2 border-slate-900 pb-6">
+        <div className="relative z-10 flex justify-between items-center border-b-2 border-[#0c2340] pb-5">
           <div>
-            <span className="text-sm font-black tracking-wider text-slate-900 uppercase">LUXPROC INNOVACIÓN Y TECNOLOGÍA S.A.C.</span>
+            <h2 className="text-base font-black tracking-wider text-[#0c2340] uppercase">
+              LUXPROC INNOVACIÓN Y TECNOLOGÍA S.A.C.
+            </h2>
+            <p className="text-[11px] font-bold tracking-widest text-[#0284c7] uppercase mt-0.5">
+              TECNOLOGÍA • SOFTWARE • SOLUCIONES DIGITALES
+            </p>
           </div>
           <img 
             src="https://i.imgur.com/WWChkA9.png" 
             alt="LUXPROC Logo" 
-            className="h-16 w-auto object-contain"
+            className="h-14 w-auto object-contain"
             referrerPolicy="no-referrer"
           />
         </div>
 
         {/* Title and General Score */}
-        <div className="space-y-7 my-auto text-center py-6">
-          <div className="inline-block px-4 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-xs font-extrabold text-blue-700 tracking-widest uppercase">
-            {hasPrevious 
-              ? tr.evolutionSubhead(daysElapsed)
-              : tr.auditSubhead}
+        <div className="relative z-10 space-y-6 my-auto text-center py-4">
+          <div className="inline-flex items-center gap-2 px-5 py-2 bg-[#f0f9ff] border border-sky-300 rounded-full text-xs font-bold text-[#0284c7] tracking-wider uppercase shadow-xs">
+            <FileText className="w-4 h-4 text-[#0284c7]" />
+            <span>
+              {hasPrevious 
+                ? tr.evolutionSubhead(daysElapsed)
+                : 'AUDITORÍA Y PLAN ESTRATÉGICO DE TRANSFORMACIÓN DIGITAL'}
+            </span>
           </div>
           
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900 uppercase leading-tight">
-            {tr.officialTitle}
-          </h1>
+          <div className="space-y-1">
+            <div className="text-2xl sm:text-3xl font-extrabold tracking-wider text-slate-800 uppercase">
+              INFORME OFICIAL DE
+            </div>
+            <h1 className="text-5xl sm:text-6xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#0284c7] via-[#0284c7] to-[#1d4ed8] uppercase leading-none">
+              MADUREZ DIGITAL
+            </h1>
+          </div>
           
           <p className="text-sm text-slate-600 max-w-2xl mx-auto leading-relaxed">
             {hasPrevious
               ? tr.coverDescEvolution(previousRecord?.date || '')
-              : tr.coverDescStandard}
+              : 'Evaluación integral de capacidades tecnológicas, procesos operativos, canales comerciales y hoja de ruta de modernización.'}
           </p>
 
           <div className="pt-2 flex flex-col items-center justify-center">
-            <div className="p-6 rounded-3xl bg-slate-50 border-2 border-slate-300 shadow-sm flex flex-col items-center min-w-[280px]">
-              <span className="text-xs font-black uppercase tracking-widest text-slate-500">{tr.generalIndex}</span>
-              <div className="text-6xl font-black font-mono text-slate-900 my-2">
+            <div className="p-7 rounded-3xl bg-white border border-slate-200 shadow-md flex flex-col items-center min-w-[320px] max-w-md w-full">
+              <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500 mb-1">
+                <Target className="w-4 h-4 text-[#0284c7]" />
+                <span>{tr.generalIndex}</span>
+              </div>
+              
+              <div className="text-7xl font-black font-mono text-slate-900 tracking-tight my-2">
                 {metrics.general}%
               </div>
-              <span className={`text-xs font-black px-4 py-1 rounded-full border ${levelInfo.badgeClass}`}>
-                {levelInfo.title.toUpperCase()}
-              </span>
+
+              <div className="my-1">
+                <span className={`text-xs font-black px-4 py-1.5 rounded-full border shadow-xs ${levelInfo.badgeClass}`}>
+                  {levelInfo.title.toUpperCase()}
+                </span>
+              </div>
+
+              <div className="w-12 h-1 bg-[#0284c7] rounded-full my-3"></div>
+
               {hasPrevious && previousRecord && (
-                <div className="mt-3 pt-2.5 border-t border-slate-200 text-xs font-bold text-slate-700 flex items-center justify-center gap-2">
+                <div className="mb-2 pt-2 border-t border-slate-100 text-xs font-bold text-slate-700 flex items-center justify-center gap-2">
                   <span className="text-slate-500 text-[11px]">{tr.baseline}: <strong>{previousRecord.metrics.general}%</strong></span>
                   <span className="text-slate-400">➔</span>
                   <span className={`text-[11px] font-black px-2 py-0.5 rounded ${
@@ -207,43 +254,74 @@ export default function FullDocumentReport({ record, previousRecord, isPrint = t
                   </span>
                 </div>
               )}
+
+              <p className="text-xs text-slate-500 max-w-sm text-center italic leading-relaxed">
+                {levelInfo.description}
+              </p>
             </div>
-            <p className="text-xs text-slate-500 mt-3 max-w-md text-center italic">
-              {levelInfo.description}
-            </p>
           </div>
         </div>
 
-        {/* Metadata Footer Box */}
-        <div className="border-t-2 border-slate-900 pt-6 text-xs text-slate-700">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-3 gap-x-6">
-            <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase block">{tr.evaluatedCompany}</span>
-              <strong className="text-slate-900 text-sm">{companyInfo.name}</strong>
+        {/* Metadata Footer Box (3 Columns as in Image 2) */}
+        <div className="relative z-10 border-t border-slate-200 pt-5 text-xs text-slate-700">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            
+            {/* Column 1 */}
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#f0f9ff] border border-sky-200 flex items-center justify-center text-[#0284c7] shrink-0 mt-0.5">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{tr.evaluatedCompany}</span>
+                  <strong className="text-slate-900 text-sm font-extrabold block truncate">{companyInfo.name}</strong>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{tr.auditCode}</span>
+                  <span className="font-mono font-bold text-slate-700 text-xs">{id}</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase block">{tr.economicSector}</span>
-              <strong className="text-slate-900 text-sm">{localizedSector}</strong>
+
+            {/* Column 2 */}
+            <div className="flex items-start gap-3 sm:border-l sm:border-slate-200 sm:pl-6">
+              <div className="w-10 h-10 rounded-xl bg-[#f0f9ff] border border-sky-200 flex items-center justify-center text-[#0284c7] shrink-0 mt-0.5">
+                <Settings className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{tr.economicSector}</span>
+                  <strong className="text-slate-900 text-sm font-extrabold block truncate">{localizedSector}</strong>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{tr.issueDateTime}</span>
+                  <span className="text-slate-700 font-medium text-xs">{date} {time}</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase block">{tr.corporateSize}</span>
-              <strong className="text-slate-900 text-sm">{localizedSize}</strong>
+
+            {/* Column 3 */}
+            <div className="flex items-start gap-3 sm:border-l sm:border-slate-200 sm:pl-6">
+              <div className="w-10 h-10 rounded-xl bg-[#f0f9ff] border border-sky-200 flex items-center justify-center text-[#0284c7] shrink-0 mt-0.5">
+                <Users className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{tr.corporateSize}</span>
+                  <strong className="text-slate-900 text-sm font-extrabold block truncate">{localizedSize}</strong>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{tr.contactEmail}</span>
+                  <span className="text-slate-700 font-medium text-xs block truncate">{companyInfo.contactEmail}</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase block">{tr.auditCode}</span>
-              <span className="font-mono font-bold text-slate-900">{id}</span>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase block">{tr.issueDateTime}</span>
-              <span className="text-slate-900 font-medium">{date} {time}</span>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase block">{tr.contactEmail}</span>
-              <span className="text-slate-900 font-medium">{companyInfo.contactEmail}</span>
-            </div>
+
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-200 text-[10px] text-slate-400 text-center">
-            {tr.legalFooter}
+
+          {/* Legal Certification Footer */}
+          <div className="mt-5 pt-3 border-t border-slate-100 text-[10px] text-slate-400 text-center tracking-wide">
+            {tr.legalFooter || 'Documento técnico certificado emitido por LUXPROC INNOVACIÓN Y TECNOLOGÍA S.A.C., con validez para planificación de inversiones y modernización de procesos.'}
           </div>
         </div>
       </div>

@@ -6,8 +6,9 @@ import {
   Users, Award, BarChart3, Search, Filter, Download, 
   Eye, FileSpreadsheet, FileText, ChevronRight, Briefcase, 
   Settings, ShieldAlert, ArrowLeft, TrendingUp, Printer,
-  Trash2, Building2
+  Trash2, Building2, HardDrive
 } from 'lucide-react';
+import { exportDataBackup } from '../utils/dataMigration';
 
 interface AdminPanelProps {
   userRecords: DiagnosticRecord[];
@@ -29,6 +30,8 @@ export default function AdminPanel({ userRecords, onViewRecord, onPrintRecord, o
   const [selectedSize, setSelectedSize] = useState<string>('todos');
   const [selectedLevel, setSelectedLevel] = useState<string>('todos');
   const [showExportSuccess, setShowExportSuccess] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // Computed metrics on filtered data
   const filteredRecords = allRecords.filter(rec => {
@@ -106,25 +109,37 @@ export default function AdminPanel({ userRecords, onViewRecord, onPrintRecord, o
 
         <div className="flex flex-wrap items-center gap-2 self-start md:self-center">
           {onClearAllRecords && allRecords.length > 0 && (
-            <button
-              id="admin-clear-all"
-              onClick={() => {
-                if (window.confirm(
-                  language === 'es' 
-                    ? '¿Estás seguro de vaciar todos los registros para empezar 100% en blanco?' 
-                    : language === 'pt' 
-                    ? 'Tem certeza de que deseja limpar todos os registros para começar 100% em branco?' 
-                    : 'Are you sure you want to clear all records to start 100% in blank?'
-                )) {
-                  onClearAllRecords();
-                }
-              }}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 bg-rose-50/70 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-all text-sm font-bold cursor-pointer shadow-sm"
-              title={language === 'es' ? 'Vaciar registros para empezar en blanco' : 'Clear records to start blank'}
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>{language === 'es' ? 'Empezar en Blanco' : language === 'pt' ? 'Começar em Branco' : 'Start Blank'}</span>
-            </button>
+            showClearConfirm ? (
+              <div className="flex items-center gap-1.5 p-1 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-900 rounded-xl animate-in fade-in">
+                <span className="text-xs font-bold text-rose-700 dark:text-rose-400 px-2">¿Vaciar todo?</span>
+                <button
+                  id="confirm-clear-all"
+                  onClick={() => {
+                    onClearAllRecords();
+                    setShowClearConfirm(false);
+                  }}
+                  className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg cursor-pointer shadow-xs transition-all"
+                >
+                  Sí, vaciar
+                </button>
+                <button
+                  onClick={() => setShowClearConfirm(false)}
+                  className="px-2 py-1 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-bold rounded-lg cursor-pointer transition-all"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button
+                id="admin-clear-all"
+                onClick={() => setShowClearConfirm(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 bg-rose-50/70 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-all text-sm font-bold cursor-pointer shadow-sm"
+                title={language === 'es' ? 'Vaciar registros para empezar en blanco' : 'Clear records to start blank'}
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{language === 'es' ? 'Empezar en Blanco' : language === 'pt' ? 'Começar em Branco' : 'Start Blank'}</span>
+              </button>
+            )
           )}
           <button
             id="admin-export-excel"
@@ -141,6 +156,15 @@ export default function AdminPanel({ userRecords, onViewRecord, onPrintRecord, o
           >
             <FileText className="w-4 h-4" />
             <span>{language === 'es' ? 'Exportar Lista PDF' : language === 'pt' ? 'Exportar Lista PDF' : 'Export PDF List'}</span>
+          </button>
+          <button
+            id="admin-export-json-backup"
+            onClick={() => exportDataBackup(allRecords)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-cyan-200 dark:border-cyan-800/40 text-cyan-700 dark:text-cyan-400 bg-cyan-50/50 dark:bg-cyan-950/20 hover:bg-cyan-100 dark:hover:bg-cyan-950/40 transition-all text-sm font-semibold cursor-pointer shadow-sm"
+            title="Descargar respaldo completo JSON inmune a actualizaciones"
+          >
+            <HardDrive className="w-4 h-4" />
+            <span>{language === 'es' ? 'Respaldo JSON' : language === 'pt' ? 'Backup JSON' : 'Backup JSON'}</span>
           </button>
         </div>
       </div>
@@ -400,18 +424,37 @@ export default function AdminPanel({ userRecords, onViewRecord, onPrintRecord, o
                           </button>
 
                           {onDeleteRecord && (
-                            <button
-                              id={`delete-rec-${rec.id}`}
-                              onClick={() => {
-                                if (window.confirm(language === 'es' ? `¿Eliminar el registro de "${rec.companyInfo.name}"?` : `Delete record of "${rec.companyInfo.name}"?`)) {
-                                  onDeleteRecord(rec.id);
-                                }
-                              }}
-                              className="inline-flex items-center p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-900/60 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-all text-xs cursor-pointer bg-white dark:bg-slate-900 shadow-sm"
-                              title={language === 'es' ? 'Eliminar este registro' : 'Delete this record'}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            deletingId === rec.id ? (
+                              <div className="inline-flex items-center gap-1 bg-rose-50 dark:bg-rose-950/60 p-1 rounded-xl border border-rose-300 dark:border-rose-800 shadow-sm animate-in fade-in zoom-in-95 duration-150">
+                                <button
+                                  id={`confirm-delete-${rec.id}`}
+                                  onClick={() => {
+                                    onDeleteRecord(rec.id);
+                                    setDeletingId(null);
+                                  }}
+                                  className="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[11px] font-black cursor-pointer shadow-xs transition-colors"
+                                  title="Confirmar eliminación"
+                                >
+                                  {language === 'es' ? 'Borrar' : 'Delete'}
+                                </button>
+                                <button
+                                  onClick={() => setDeletingId(null)}
+                                  className="px-1.5 py-1 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-xs font-bold cursor-pointer"
+                                  title="Cancelar"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                id={`delete-rec-${rec.id}`}
+                                onClick={() => setDeletingId(rec.id)}
+                                className="inline-flex items-center p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-900/60 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-all text-xs cursor-pointer bg-white dark:bg-slate-900 shadow-sm"
+                                title={language === 'es' ? 'Eliminar este registro' : 'Delete this record'}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )
                           )}
                         </div>
                       </td>

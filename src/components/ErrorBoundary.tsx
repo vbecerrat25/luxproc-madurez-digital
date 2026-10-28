@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { RefreshCw, ArrowRight, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { safeStorage } from '../utils/storage';
 
 interface Props {
   children: ReactNode;
@@ -75,9 +76,9 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
   private handleReset = () => {
     try {
-      localStorage.removeItem('loopsblock_draft_company');
-      localStorage.removeItem('loopsblock_draft_responses');
-      localStorage.removeItem('loopsblock_draft_step');
+      safeStorage.removeItem('loopsblock_draft_company');
+      safeStorage.removeItem('loopsblock_draft_responses');
+      safeStorage.removeItem('loopsblock_draft_step');
     } catch (e) {
       console.warn('No se pudo limpiar almacenamiento local:', e);
     }
